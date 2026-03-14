@@ -17,6 +17,14 @@ function SignInContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      router.push('/dashboard')
+    }
+  }, [router])
+
   // Handle OAuth callback
   useEffect(() => {
     const oauthSuccess = searchParams.get('oauth_success')

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 const navLinks = [
   { label: "About", href: "#about" },
@@ -14,6 +15,16 @@ const navLinks = [
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    // Check for logged in user
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setUser(JSON.parse(storedUser))
+    }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +40,12 @@ export function Navbar() {
     if (element) {
       element.scrollIntoView({ behavior: "smooth" })
     }
+  }
+
+  const handleSignOut = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    router.push('/')
   }
 
   return (
@@ -71,20 +88,53 @@ export function Navbar() {
             ))}
           </ul>
 
-          {/* Auth Buttons */}
+          {/* Auth Buttons - Show user info if logged in */}
           <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/signin"
-              className="font-mono text-xs tracking-wider text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-blue-400 transition-colors duration-300 cursor-none"
-            >
-              SIGN IN
-            </Link>
-            <Link
-              href="/signup"
-              className="px-4 py-2 bg-rose-500 dark:bg-blue-600 text-white font-mono text-xs tracking-wider rounded-lg hover:bg-rose-600 dark:hover:bg-blue-700 transition-colors duration-300 cursor-none"
-            >
-              SIGN UP
-            </Link>
+            {user ? (
+              <>
+                {/* User Info */}
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 px-3 py-2 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full flex items-center justify-center">
+                    <span className="font-mono text-xs font-bold text-white">
+                      {(user.name || user.username || 'U')[0].toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-mono text-xs font-semibold text-slate-900">
+                      {user.name || user.username || 'User'}
+                    </p>
+                    <p className="font-mono text-[10px] text-rose-500">
+                      {user.balance ? `₱${parseFloat(user.balance).toFixed(2)}` : '₱0.00'}
+                    </p>
+                  </div>
+                </Link>
+                {/* Sign Out */}
+                <button
+                  onClick={handleSignOut}
+                  className="font-mono text-xs tracking-wider text-slate-600 hover:text-rose-600 transition-colors duration-300"
+                >
+                  SIGN OUT
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  className="font-mono text-xs tracking-wider text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-blue-400 transition-colors duration-300 cursor-none"
+                >
+                  SIGN IN
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-rose-500 dark:bg-blue-600 text-white font-mono text-xs tracking-wider rounded-lg hover:bg-rose-600 dark:hover:bg-blue-700 transition-colors duration-300 cursor-none"
+                >
+                  SIGN UP
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -140,18 +190,43 @@ export function Navbar() {
                 transition={{ delay: 0.4 }}
                 className="flex items-center gap-4 mt-8"
               >
-                <Link
-                  href="/signin"
-                  className="px-6 py-2 border-2 border-rose-500 dark:border-blue-400 text-rose-600 dark:text-blue-400 font-semibold rounded-lg hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-none"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/signup"
-                  className="px-6 py-2 bg-rose-500 dark:bg-blue-600 text-white font-semibold rounded-lg hover:bg-rose-600 dark:hover:bg-blue-700 transition-colors cursor-none"
-                >
-                  Sign Up
-                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="px-6 py-2 border-2 border-rose-500 text-rose-600 font-semibold rounded-lg hover:bg-rose-50 transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleSignOut()
+                        setIsMenuOpen(false)
+                      }}
+                      className="px-6 py-2 bg-rose-500 text-white font-semibold rounded-lg hover:bg-rose-600 transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/signin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="px-6 py-2 border-2 border-rose-500 dark:border-blue-400 text-rose-600 dark:text-blue-400 font-semibold rounded-lg hover:bg-rose-50 dark:hover:bg-slate-800 transition-colors cursor-none"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="px-6 py-2 bg-rose-500 dark:bg-blue-600 text-white font-semibold rounded-lg hover:bg-rose-600 dark:hover:bg-blue-700 transition-colors cursor-none"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
               </motion.div>
             </nav>
           </motion.div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCurrency } from "@/hooks/useCurrency"
 import { 
@@ -40,6 +40,7 @@ const navItems = [
 export default function BrutalistSidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { formatPrice } = useCurrency()
   const [user, setUser] = useState<any>(null)
 
@@ -49,6 +50,40 @@ export default function BrutalistSidebar() {
       setUser(JSON.parse(storedUser))
     }
   }, [])
+
+  // Update user state when localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedUser = localStorage.getItem('user')
+      if (storedUser) {
+        setUser(JSON.parse(storedUser))
+      } else {
+        setUser(null)
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    // Also check on focus to sync state
+    window.addEventListener('focus', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleStorageChange)
+    }
+  }, [])
+
+  const handleSignOut = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    setIsOpen(false)
+    router.push('/')
+  }
+
+  const userInitial = user?.name ? user.name[0].toUpperCase() : 
+                      user?.username ? user.username[0].toUpperCase() : 
+                      'U'
+  const userName = user?.name || user?.username || 'User'
+  const userBalance = user?.balance || '0'
 
   return (
     <>
@@ -102,15 +137,15 @@ export default function BrutalistSidebar() {
           </Link>
         </div>
 
-        {/* User Info */}
+        {/* User Info - Show actual user data */}
         <div className="mx-4 p-4 bg-gradient-to-br from-rose-50 to-white rounded-2xl border border-rose-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-full flex items-center justify-center shadow-md">
-              <span className="font-mono text-white font-bold text-sm">U</span>
+              <span className="font-mono text-white font-bold text-sm">{userInitial}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-mono text-sm font-semibold text-slate-900 truncate">Test User</p>
-              <p className="font-mono text-xs text-rose-500 font-bold">{user ? formatPrice(parseFloat(user.balance || '0')) : formatPrice(0)}</p>
+              <p className="font-mono text-sm font-semibold text-slate-900 truncate">{userName}</p>
+              <p className="font-mono text-xs text-rose-500 font-bold">{formatPrice(parseFloat(userBalance))}</p>
             </div>
           </div>
         </div>
@@ -141,15 +176,14 @@ export default function BrutalistSidebar() {
           </div>
         </nav>
 
-        {/* Footer */}
+        {/* Footer - Sign Out Button */}
         <div className="p-4 flex gap-2">
-          <Link 
-            href="/signin"
-            onClick={() => setIsOpen(false)}
+          <button 
+            onClick={handleSignOut}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-rose-500 hover:bg-rose-600 rounded-xl font-mono text-xs font-semibold text-white transition-colors shadow-lg shadow-rose-500/30"
           >
             <span>Sign Out</span>
-          </Link>
+          </button>
         </div>
       </motion.aside>
     </>

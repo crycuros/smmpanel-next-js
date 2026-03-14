@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { User, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react"
 import { CustomCursor } from "@/components/custom-cursor"
 import { useToast } from "@/components/toast-provider"
 
 export default function SignUp() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -16,6 +18,14 @@ export default function SignUp() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const { addToast } = useToast()
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      router.push('/dashboard')
+    }
+  }, [router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

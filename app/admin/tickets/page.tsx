@@ -53,13 +53,37 @@ export default function AdminTickets() {
   const fetchTickets = async () => {
     setIsLoading(true)
     try {
-      const { data: ticketsData } = await supabase
+      // Get tickets without join first
+      const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
-        .select('*, users(username, email)')
-        .order('id', { ascending: false })
+        .select('*')
+        .order('ticket_id', { ascending: false })
 
-      if (ticketsData) {
-        setTickets(ticketsData)
+      console.log('Tickets query result:', { ticketsData, ticketsError })
+      
+      if (ticketsError) {
+        console.error('Tickets error:', ticketsError)
+      }
+
+      if (ticketsData && ticketsData.length > 0) {
+        // Get unique client_ids
+        const clientIds = [...new Set(ticketsData.map(t => t.client_id))]
+        
+        // Fetch user data
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('client_id, username, email')
+          .in('client_id', clientIds)
+        
+        // Merge user data
+        const ticketsWithUsers = ticketsData.map(ticket => ({
+          ...ticket,
+          users: usersData?.find(u => u.client_id === ticket.client_id)
+        }))
+        
+        setTickets(ticketsWithUsers)
+      } else {
+        setTickets([])
       }
     } catch (error) {
       console.error('Error fetching tickets:', error)

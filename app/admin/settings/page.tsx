@@ -77,6 +77,13 @@ export default function AdminSettings() {
   const [isSaving, setIsSaving] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importStatus, setImportStatus] = useState<{type: 'success' | 'error', message: string} | null>(null)
+  
+  // 2FA State
+  const [totpEnabled, setTotpEnabled] = useState(false)
+  const [qrCodeURL, setQrCodeURL] = useState("")
+  const [totpSecret, setTotpSecret] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [isLoading2FA, setIsLoading2FA] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState("weboostph")
   const [profitPercent, setProfitPercent] = useState("20")
   const [providers, setProviders] = useState<Provider[]>([
@@ -191,6 +198,72 @@ export default function AdminSettings() {
       setProfitPercent(savedProfit)
     }
   }, [router])
+
+  // Check if 2FA is enabled
+  useEffect(() => {
+    const check2FA = async () => {
+      if (!user?.email) return
+      try {
+        const { data } = await supabase
+          .from('users')
+          .select('totp_secret')
+          .eq('email', user.email)
+          .single()
+        if (data?.totp_secret) {
+          setTotpEnabled(true)
+        }
+      } catch (err) {
+        console.error('Error checking 2FA:', err)
+      }
+    }
+    if (user?.email) check2FA()
+  }, [user])
+
+  // 2FA Setup Functions
+  const setup2FA = async () => {
+    if (!user?.email) return
+    setIsLoading2FA(true)
+    try {
+      const response = await fetch('/api/auth/setup-totp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email })
+      })
+      const data = await response.json()
+      if (data.qrCodeURL) {
+        setQrCodeURL(data.qrCodeURL)
+        setTotpSecret(data.secret)
+      } else {
+        alert(data.error || 'Failed to setup 2FA')
+      }
+    } catch (err) {
+      console.error('2FA setup error:', err)
+    }
+    setIsLoading2FA(false)
+  }
+
+  const verify2FA = async () => {
+    if (!user?.email || verificationCode.length !== 6) return
+    try {
+      const response = await fetch('/api/auth/setup-totp', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, code: verificationCode })
+      })
+      const data = await response.json()
+      if (data.success) {
+        setTotpEnabled(true)
+        setQrCodeURL("")
+        setTotpSecret("")
+        setVerificationCode("")
+        alert('2FA enabled successfully!')
+      } else {
+        alert(data.error || 'Verification failed')
+      }
+    } catch (err) {
+      console.error('2FA verify error:', err)
+    }
+  }
 
   const allProviders = [...DEFAULT_PROVIDERS, ...customProviders]
 
@@ -1126,6 +1199,52 @@ export default function AdminSettings() {
             {activeTab === "security" && (
               <div className="space-y-6">
                 <h2 className="font-mono text-lg font-semibold text-white mb-4">Security Settings</h2>
+                
+                {/* 2FA Setup */}
+                <div className="p-4 bg-slate-800 rounded-xl border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-mono text-sm text-white">Google Authenticator 2FA</p>
+                      <p className="font-mono text-xs text-slate-400">
+                        {totpEnabled ? "✓ Enabled" : "Not enabled"}
+                      </p>
+                    </div>
+                    {!totpEnabled && (
+                      <button 
+                        onClick={setup2FA}
+                        disabled={isLoading2FA}
+                        className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-mono text-xs"
+                      >
+                        {isLoading2FA ? "Loading..." : "Setup"}
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* QR Code */}
+                  {qrCodeURL && (
+                    <div className="mt-4 p-3 bg-white rounded-lg">
+                      <p className="text-xs text-center text-slate-600 mb-2">Scan with Google Authenticator</p>
+                      <img src={qrCodeURL} alt="QR" className="w-40 h-40 mx-auto" />
+                      <p className="text-[10px] text-center text-slate-500 mt-2 break-all">Secret: {totpSecret}</p>
+                      <div className="mt-3">
+                        <input 
+                          type="text" 
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="Enter code"
+                          className="w-full px-3 py-2 border rounded-lg text-center font-mono text-sm"
+                        />
+                        <button 
+                          onClick={verify2FA}
+                          disabled={verificationCode.length !== 6}
+                          className="w-full mt-2 px-3 py-2 bg-green-500 text-white rounded-lg font-mono text-xs disabled:opacity-50"
+                        >
+                          Verify & Enable
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">

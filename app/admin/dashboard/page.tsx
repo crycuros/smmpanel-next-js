@@ -120,10 +120,13 @@ export default function AdminDashboard() {
         }
       }
 
-      // Fetch tickets count
+      // Fetch tickets count - only open tickets
       const { count: ticketsCount } = await supabase
         .from('tickets')
         .select('*', { count: 'exact', head: true })
+        .neq('status', 'closed')
+        
+      console.log('Tickets count:', ticketsCount)
 
       setStats({
         users: usersCount || 0,

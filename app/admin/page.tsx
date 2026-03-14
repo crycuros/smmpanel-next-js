@@ -37,11 +37,22 @@ export default function AdminLogin() {
       })
 
       const data = await response.json()
+      
+      // Debug: show response
+      console.log('Login response:', data)
 
       if (data.success && data.requires2FA) {
         setAdminEmail(email)
         setAdminPassword(password)
         setStep("2fa")
+      } else if (data.success) {
+        // No 2FA required, login directly
+        localStorage.setItem('admin', JSON.stringify({
+          email,
+          loggedIn: true,
+          loginTime: new Date().toISOString()
+        }))
+        router.push('/admin/dashboard')
       } else {
         setError(data.error || 'Invalid credentials')
       }

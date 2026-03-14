@@ -20,24 +20,33 @@ export default function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [step, setStep] = useState<"credentials" | "2fa">("credentials")
+  const [adminEmail, setAdminEmail] = useState("")
+  const [adminPassword, setAdminPassword] = useState("")
   const router = useRouter()
-
-  // For demo purposes - in production, this would come from database
-  const adminEmail = "admin@nexofame.com"
-  const adminPassword = "admin123"
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError("")
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      const response = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
-    if (email === adminEmail && password === adminPassword) {
-      setStep("2fa")
-    } else {
-      setError("Invalid email or password")
+      const data = await response.json()
+
+      if (data.success && data.requires2FA) {
+        setAdminEmail(email)
+        setAdminPassword(password)
+        setStep("2fa")
+      } else {
+        setError(data.error || 'Invalid credentials')
+      }
+    } catch (err) {
+      setError('Authentication failed')
     }
     
     setIsLoading(false)
@@ -48,18 +57,32 @@ export default function AdminLogin() {
     setIsLoading(true)
     setError("")
 
-    // For demo: accept any 6-digit code
-    // In production, verify against Google Authenticator TOTP
-    if (code.length === 6 && /^\d+$/.test(code)) {
-      // Set admin session
-      localStorage.setItem('admin', JSON.stringify({
-        email: adminEmail,
-        loggedIn: true,
-        loginTime: new Date().toISOString()
-      }))
-      router.push('/admin/dashboard')
-    } else {
-      setError("Invalid authentication code. Please enter a 6-digit code.")
+    // Verify 2FA code with server
+    try {
+      const response = await fetch('/api/auth/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: adminEmail, 
+          password: adminPassword,
+          totpCode: code 
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        localStorage.setItem('admin', JSON.stringify({
+          email: adminEmail,
+          loggedIn: true,
+          loginTime: new Date().toISOString()
+        }))
+        router.push('/admin/dashboard')
+      } else {
+        setError(data.error || 'Invalid authentication code')
+      }
+    } catch (err) {
+      setError('Authentication failed')
     }
     
     setIsLoading(false)

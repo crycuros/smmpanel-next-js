@@ -52,9 +52,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Error fetching provider services:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch services' },
+      { error: 'Failed to fetch services' },
       { status: 500 }
     );
   }

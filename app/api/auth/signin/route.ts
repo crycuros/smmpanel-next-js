@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import bcrypt from 'bcrypt'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,9 +21,8 @@ export async function POST(request: NextRequest) {
       .limit(1)
 
     if (error) {
-      console.error('Supabase error:', error)
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Authentication failed' },
         { status: 500 }
       )
     }
@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
 
     const user = users[0]
 
-    // Check password (assuming password is stored as plain text - you should hash it in production!)
-    if (user.password !== password) {
+    // Verify password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password)
+    
+    if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -53,9 +55,8 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Login error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Authentication failed' },
       { status: 500 }
     )
   }

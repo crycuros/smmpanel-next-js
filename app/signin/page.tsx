@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, ArrowRight, Chrome } from "lucide-react"
 import { CustomCursor } from "@/components/custom-cursor"
 import { useToast } from "@/components/toast-provider"
 
@@ -44,6 +44,15 @@ export default function SignIn() {
       addToast('An error occurred. Please try again.', "error", 3000)
       setIsLoading(false)
     }
+  }
+
+  const handleGoogleSignIn = async () => {
+    // Redirect to Supabase Google OAuth
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const redirectTo = `${window.location.origin}/api/auth/callback/google`
+    
+    // For now, show message that Google OAuth needs to be configured
+    addToast("Google OAuth requires Supabase configuration. Contact admin.", "info", 5000)
   }
 
   return (
@@ -154,8 +163,10 @@ export default function SignIn() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="py-2 border border-slate-300 font-semibold text-slate-900 hover:border-rose-500 hover:bg-rose-50 transition-colors duration-300 cursor-none"
+              onClick={handleGoogleSignIn}
+              className="py-2 border border-slate-300 font-semibold text-slate-900 hover:border-rose-500 hover:bg-rose-50 transition-colors duration-300 flex items-center justify-center gap-2 cursor-none"
             >
+              <Chrome className="w-5 h-5" />
               Google
             </motion.button>
             <motion.button

@@ -29,9 +29,8 @@ async function getSettings() {
       return await response.json()
     }
   } catch (error) {
-    console.error('Error fetching settings:', error)
+    return null
   }
-  return null
 }
 
 export async function GET(request: Request) {
@@ -67,7 +66,6 @@ export async function GET(request: Request) {
       ip: data.ip
     })
   } catch (error) {
-    console.error('Error detecting country:', error)
     return NextResponse.json({ 
       country: 'US', 
       currency: 'USD' 

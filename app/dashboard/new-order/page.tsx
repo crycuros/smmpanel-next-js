@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import BrutalistSidebar from "@/components/brutalist-sidebar"
 import { useCurrency } from "@/hooks/useCurrency"
+import { parseSocialUrl, getPlatformInfo, type ParsedUrl } from "@/lib/url-parser"
 import { 
   Search,
   Facebook,
@@ -16,7 +17,11 @@ import {
   Linkedin,
   ArrowRight,
   Loader2,
-  Sparkles
+  Sparkles,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  Link as LinkIcon
 } from "lucide-react"
 
 interface Category {
@@ -82,8 +87,50 @@ export default function NewOrder() {
   const [quantity, setQuantity] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
+  const [parsedUrl, setParsedUrl] = useState<ParsedUrl | null>(null)
+  const [isExpanding, setIsExpanding] = useState(false)
+  const [expandedUrl, setExpandedUrl] = useState<string | null>(null)
   const router = useRouter()
   const { currency, config, convertPrice, formatPrice } = useCurrency()
+
+  // Handle link change with URL parsing
+  const handleLinkChange = async (value: string) => {
+    setLink(value)
+    setExpandedUrl(null)
+    setIsExpanding(false)
+    
+    if (value.trim()) {
+      const parsed = parseSocialUrl(value)
+      setParsedUrl(parsed)
+      
+      // Check if URL needs expansion or has tracking params
+      let urlToPreview = value
+      
+      if (parsed.needsExpansion || value.includes('utm_') || value.includes('igsh=') || value.includes('fbclid')) {
+        setIsExpanding(true)
+        try {
+          const response = await fetch('/api/expand-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: value })
+          })
+          const data = await response.json()
+          
+          if (data.originalUrl && (data.expanded || data.cleaned) && data.originalUrl !== value) {
+            setExpandedUrl(data.originalUrl)
+            setLink(data.originalUrl)
+            setParsedUrl(parseSocialUrl(data.originalUrl))
+            urlToPreview = data.originalUrl
+          }
+        } catch (err) {
+          console.error('Error processing URL:', err)
+        }
+        setIsExpanding(false)
+      }
+    } else {
+      setParsedUrl(null)
+    }
+  }
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -421,15 +468,108 @@ export default function NewOrder() {
             <h2 className="font-mono text-sm text-slate-500 uppercase tracking-wider mb-6">New Order</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="font-mono text-xs text-slate-500 uppercase block mb-2">Link</label>
+                <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
+                  <LinkIcon className="w-4 h-4 inline mr-1" />
+                  Link
+                </label>
                 <input
                   type="url"
-                  placeholder="https://..."
+                  placeholder="Paste your social media link here..."
                   value={link}
-                  onChange={(e) => setLink(e.target.value)}
+                  onChange={(e) => handleLinkChange(e.target.value)}
                   required
                   className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
                 />
+                
+                {/* URL Preview Card */}
+                {isExpanding && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-3 p-4 rounded-xl border bg-blue-50 border-blue-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      <div>
+                        <p className="text-sm font-mono text-blue-700">Expanding share link...</p>
+                        <p className="text-xs font-mono text-blue-500">Converting to original post URL</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {parsedUrl && !isExpanding && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className={`mt-3 p-4 rounded-xl border ${
+                      parsedUrl.isValid
+                        ? 'bg-green-50 border-green-200'
+                        : parsedUrl.needsExpansion
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {parsedUrl.isValid ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      ) : parsedUrl.needsExpansion ? (
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold text-white ${
+                            getPlatformInfo(parsedUrl.platform).color
+                          }`}>
+                            {getPlatformInfo(parsedUrl.platform).name}
+                          </span>
+                          {parsedUrl.isValid ? (
+                            <span className="text-xs font-mono text-green-700">Valid URL</span>
+                          ) : parsedUrl.needsExpansion ? (
+                            <span className="text-xs font-mono text-amber-700">Share link - use original link</span>
+                          ) : (
+                            <span className="text-xs font-mono text-red-700">{parsedUrl.error}</span>
+                          )}
+                          {expandedUrl && (
+                            <span className="text-xs font-mono text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Auto-expanded ✓</span>
+                          )}
+                        </div>
+                        {parsedUrl.username && (
+                          <p className="text-xs font-mono text-slate-600 truncate">
+                            @{parsedUrl.username}
+                          </p>
+                        )}
+                        {parsedUrl.postId && (
+                          <p className="text-xs font-mono text-slate-500 truncate">
+                            Post ID: {parsedUrl.postId}
+                          </p>
+                        )}
+                        {parsedUrl.needsExpansion && (
+                          <div className="text-[10px] font-mono text-amber-700 mt-2">
+                            <p>⚠️ Share link detected - attempting auto-expand...</p>
+                          </div>
+                        )}
+                        {!parsedUrl.needsExpansion && (
+                          <p className="text-[10px] font-mono text-slate-400 mt-2">
+                            Examples: {getPlatformInfo(parsedUrl.platform).examples}
+                          </p>
+                        )}
+                      </div>
+                      {parsedUrl.isValid && (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-rose-500 hover:text-rose-600"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
               <div>
                 <label className="font-mono text-xs text-slate-500 uppercase block mb-2">

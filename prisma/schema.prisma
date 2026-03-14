@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  client_id          Int      @id @default(autoincrement())
+  name               String?
+  email              String   @unique
+  username           String   @unique
+  admin_type        String?  @default("user") // 2=ON, 1=OFF
+  password          String
+  telephone         String?
+  balance           Float    @default(0)
+  spent              Float    @default(0)
+  balance_type       String?
+  debit_limit        Float    @default(0)
+  register_date     DateTime @default(now())
+  login_date        DateTime?
+  login_ip          String?
+  apikey            String?
+  tel_type          String   @default("1") // 2=ON, 1=OFF
+  email_type        String   @default("1") // 2=ON, 1=OFF
+  client_type       String   @default("1") // 2=ON, 1=OFF
+  access            String?
+  lang              String   @default("en")
+  timezone          String   @default("UTC")
+  currency_type     String?
+  ref_code          String?
+  ref_by            String?
+  change_email      String?
+  resend_max        Int      @default(0)
+  currency          String   @default("USD")
+  passwordreset_token String?
+  discount_percentage Float   @default(0)
+  broadcast_id      String?
+
+  @@map("users")
+}

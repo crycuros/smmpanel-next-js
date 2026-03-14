@@ -1,0 +1,366 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
+import { supabase } from "@/lib/supabase"
+import BrutalistSidebar from "@/components/brutalist-sidebar"
+import { useCurrency } from "@/hooks/useCurrency"
+import { 
+  Search,
+  Filter,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+  Linkedin,
+  Sparkles,
+  ChevronDown,
+  Info
+} from "lucide-react"
+
+interface Category {
+  category_id: number
+  category_name: string
+  category_line: number
+}
+
+interface Service {
+  service_id: number
+  service_name: string
+  category_id: number
+  service_price: string
+  service_min: number
+  service_max: number
+  service_line: number
+  service_description: string
+  time: string
+  average_time: number
+  service_refill?: string
+}
+
+const categoryIcons: Record<string, any> = {
+  "Facebook Reactions": Facebook,
+  "Facebook Followers": Facebook,
+  "Facebook Likes": Facebook,
+  "Facebook Comments": Facebook,
+  "Instagram Followers": Instagram,
+  "Instagram Likes": Instagram,
+  "Twitter Followers": Twitter,
+  "Twitter Likes": Twitter,
+  "YouTube Views": Youtube,
+  "YouTube Likes": Youtube,
+  "TikTok Followers": Sparkles,
+  "TikTok Likes": Sparkles,
+}
+
+export default function Services() {
+  const [user, setUser] = useState<any>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [services, setServices] = useState<Service[]>([])
+  const [filteredServices, setFilteredServices] = useState<Service[]>([])
+  const [search, setSearch] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<number | "all">("all")
+  const [expandedService, setExpandedService] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const { currency, config, isLoading: currencyLoading, convertPrice, formatPrice } = useCurrency()
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      const userData = JSON.parse(storedUser)
+      setUser(userData)
+      fetchData()
+    } else {
+      router.push('/signin')
+    }
+  }, [router])
+
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      // Fetch categories
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('category_line', { ascending: true })
+      
+      if (categoriesData) {
+        setCategories(categoriesData)
+      }
+
+      // Fetch services
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('*')
+        .order('service_line', { ascending: true })
+      
+      if (servicesData) {
+        setServices(servicesData)
+        setFilteredServices(servicesData)
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let result = [...services]
+
+    // Filter by category
+    if (selectedCategory !== "all") {
+      result = result.filter(service => service.category_id === selectedCategory)
+    }
+
+    // Filter by search
+    if (search) {
+      result = result.filter(service => 
+        service.service_id.toString().includes(search) ||
+        service.service_name.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    setFilteredServices(result)
+  }, [services, search, selectedCategory])
+
+  const getCategoryIcon = (categoryId: number) => {
+    const category = categories.find(c => c.category_id === categoryId)
+    if (category) {
+      return categoryIcons[category.category_name] || Info
+    }
+    return Info
+  }
+
+  const getCategoryName = (categoryId: number) => {
+    const category = categories.find(c => c.category_id === categoryId)
+    return category?.category_name || 'Unknown'
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/30 to-rose-50/50">
+      <BrutalistSidebar />
+      
+      <div className="p-6 md:p-8 pt-20">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="font-sans text-3xl md:text-4xl font-light text-slate-900 mb-2">
+            Our <span className="italic text-rose-500 font-semibold">Services</span>
+          </h1>
+          <p className="font-mono text-sm text-slate-500">Browse all available services and rates</p>
+        </motion.div>
+
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by ID or service name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-white border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+            />
+          </div>
+
+          {/* Category Tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <button
+              onClick={() => setSelectedCategory("all")}
+              className={`px-4 py-2 rounded-xl font-mono text-sm whitespace-nowrap transition-all ${
+                selectedCategory === "all"
+                  ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
+                  : "bg-white text-slate-600 border border-rose-100 hover:bg-rose-50"
+              }`}
+            >
+              All Services
+            </button>
+            {categories.map((cat) => {
+              const Icon = getCategoryIcon(cat.category_id)
+              return (
+                <button
+                  key={cat.category_id}
+                  onClick={() => setSelectedCategory(cat.category_id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-sm whitespace-nowrap transition-all ${
+                    selectedCategory === cat.category_id
+                      ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30"
+                      : "bg-white text-slate-600 border border-rose-100 hover:bg-rose-50"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {cat.category_name}
+                </button>
+              )
+            })}
+          </div>
+        </motion.div>
+
+        {/* Services Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-2xl border border-rose-100 overflow-hidden"
+        >
+          {isLoading ? (
+            <div className="p-12 text-center">
+              <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="font-mono text-sm text-slate-500">Loading services...</p>
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div className="p-12 text-center">
+              <p className="font-mono text-lg text-slate-500 mb-2">No services found</p>
+              <p className="font-mono text-sm text-slate-400">Try a different search or category</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-rose-50 border-b border-rose-100">
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">ID</th>
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">Service</th>
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">Rate for 1000</th>
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">Min / Max</th>
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">Average Time</th>
+                    <th className="text-left p-4 font-mono text-xs text-slate-500 uppercase">Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredServices.map((service, index) => {
+                    const Icon = getCategoryIcon(service.category_id)
+                    const isExpanded = expandedService === service.service_id
+                    
+                    return (
+                      <>
+                        <tr 
+                          key={service.service_id} 
+                          className="border-b border-rose-50 hover:bg-rose-50/30 transition-colors cursor-pointer"
+                          onClick={() => setExpandedService(isExpanded ? null : service.service_id)}
+                        >
+                          <td className="p-4">
+                            <span className="font-mono text-sm font-semibold text-slate-900">{service.service_id}</span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-rose-100 rounded-lg flex items-center justify-center">
+                                <Icon size={16} className="text-rose-500" />
+                              </div>
+                              <div className="flex-1">
+                                <span className="font-mono text-sm text-slate-700 line-clamp-2">{service.service_name}</span>
+                                {/* Refill Indicator */}
+                                {service.service_refill === 'no' ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-500">
+                                    No Refill
+                                  </span>
+                                ) : service.service_refill === 'non-drop' ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-green-100 text-green-700">
+                                    Non-Drop
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-100 text-blue-700">
+                                    ↺ Refill
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-mono text-sm font-semibold text-rose-500">{formatPrice(parseFloat(service.service_price))} / 1k</span>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-mono text-sm text-slate-600">
+                              {service.service_min.toLocaleString()} / {service.service_max.toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <span className="font-mono text-xs text-slate-500">
+                              {service.time || 'Not enough data'}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs text-slate-500 line-clamp-1">
+                                {service.service_description || 'No description'}
+                              </span>
+                              <ChevronDown 
+                                size={16} 
+                                className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${service.service_id}-expanded`} className="bg-rose-50/30">
+                            <td colSpan={6} className="p-4">
+                              <div className="bg-white rounded-xl p-4 border border-rose-100">
+                                <h4 className="font-mono text-sm font-semibold text-slate-900 mb-2">Service Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <p className="font-mono text-xs text-slate-500 mb-1">Category</p>
+                                    <p className="font-mono text-slate-700">{getCategoryName(service.category_id)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="font-mono text-xs text-slate-500 mb-1">Minimum Order</p>
+                                    <p className="font-mono text-slate-700">{service.service_min.toLocaleString()}</p>
+                                  </div>
+                                  <div>
+                                    <p className="font-mono text-xs text-slate-500 mb-1">Maximum Order</p>
+                                    <p className="font-mono text-slate-700">{service.service_max.toLocaleString()}</p>
+                                  </div>
+                                  <div>
+                                    <p className="font-mono text-xs text-slate-500 mb-1">Average Completion Time</p>
+                                    <p className="font-mono text-slate-700">{service.time || 'Not enough data'}</p>
+                                  </div>
+                                  <div className="md:col-span-2">
+                                    <p className="font-mono text-xs text-slate-500 mb-1">Description</p>
+                                    <p className="font-mono text-slate-700">{service.service_description || 'No description available'}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </motion.div>
+
+        {/* Service Count */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 text-center"
+        >
+          <p className="font-mono text-sm text-slate-500">
+            Showing {filteredServices.length} of {services.length} services
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  )
+}

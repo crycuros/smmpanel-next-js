@@ -120,11 +120,11 @@ export default function AdminDashboard() {
         }
       }
 
-      // Fetch tickets count - only open tickets
+      // Fetch tickets count - only pending/answered (not closed)
       const { count: ticketsCount } = await supabase
         .from('tickets')
         .select('*', { count: 'exact', head: true })
-        .neq('status', 'closed')
+        .in('status', ['pending', 'answered'])
         
       console.log('Tickets count:', ticketsCount)
 

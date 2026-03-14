@@ -1,17 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { Mail, Lock, ArrowRight, Chrome } from "lucide-react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Mail, Lock, ArrowRight, Chrome, Github } from "lucide-react"
 import { CustomCursor } from "@/components/custom-cursor"
 import { useToast } from "@/components/toast-provider"
+import { supabase } from "@/lib/supabase"
 
 export default function SignIn() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { addToast } = useToast()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const oauthSuccess = searchParams.get('oauth_success')
+    const userData = searchParams.get('user')
+    const error = searchParams.get('error')
+
+    if (error) {
+      addToast(error.replace(/\+/g, ' '), "error", 3000)
+      return
+    }
+
+    if (oauthSuccess === 'true' && userData) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userData))
+        localStorage.setItem('user', JSON.stringify(user))
+        addToast(`Welcome back, ${user.name || user.username || 'User'}!`, "success", 2000)
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1500)
+      } catch (err) {
+        addToast('Failed to process login', "error", 3000)
+      }
+    }
+  }, [searchParams, addToast, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,12 +76,35 @@ export default function SignIn() {
   }
 
   const handleGoogleSignIn = async () => {
-    // Redirect to Supabase Google OAuth
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const redirectTo = `${window.location.origin}/api/auth/callback/google`
-    
-    // For now, show message that Google OAuth needs to be configured
-    addToast("Google OAuth requires Supabase configuration. Contact admin.", "info", 5000)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/handle`
+        }
+      })
+      if (error) {
+        addToast(error.message, "error", 3000)
+      }
+    } catch (err) {
+      addToast("Google login failed", "error", 3000)
+    }
+  }
+
+  const handleGithubSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/handle`
+        }
+      })
+      if (error) {
+        addToast(error.message, "error", 3000)
+      }
+    } catch (err) {
+      addToast("GitHub login failed", "error", 3000)
+    }
   }
 
   return (
@@ -172,8 +224,10 @@ export default function SignIn() {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="py-2 border border-slate-300 font-semibold text-slate-900 hover:border-rose-500 hover:bg-rose-50 transition-colors duration-300 cursor-none"
+              onClick={handleGithubSignIn}
+              className="py-2 border border-slate-300 font-semibold text-slate-900 hover:border-rose-500 hover:bg-rose-50 transition-colors duration-300 flex items-center justify-center gap-2 cursor-none"
             >
+              <Github className="w-5 h-5" />
               GitHub
             </motion.button>
           </div>

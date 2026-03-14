@@ -53,11 +53,11 @@ export default function AdminTickets() {
   const fetchTickets = async () => {
     setIsLoading(true)
     try {
-      // Get tickets without join first
+      // Get tickets without join first - use 'id' not 'ticket_id'
       const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
         .select('*')
-        .order('ticket_id', { ascending: false })
+        .order('id', { ascending: false })
 
       console.log('Tickets query result:', { ticketsData, ticketsError })
       
@@ -65,6 +65,8 @@ export default function AdminTickets() {
         console.error('Tickets error:', ticketsError)
       }
 
+      console.log('Setting tickets, count:', ticketsData?.length || 0)
+      
       if (ticketsData && ticketsData.length > 0) {
         // Get unique client_ids
         const clientIds = [...new Set(ticketsData.map(t => t.client_id))]

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -106,6 +108,13 @@ export default function AddFunds() {
   const [copied, setCopied] = useState(false)
   const router = useRouter()
   const { currency, config, convertPrice, formatPrice } = useCurrency()
+  
+  // Philippine payment methods always use PHP
+  const phpConfig = {
+    symbol: '₱',
+    exchangeRate: 1,
+    name: 'Philippine Peso'
+  }
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -129,7 +138,7 @@ export default function AddFunds() {
 
     const numericAmount = parseFloat(amount)
     if (numericAmount < selectedMethod.minAmount || numericAmount > selectedMethod.maxAmount) {
-      alert(`Please enter an amount between ${config.symbol}${selectedMethod.minAmount} and ${config.symbol}${selectedMethod.maxAmount}`)
+      alert(`Please enter an amount between ${phpConfig.symbol}${selectedMethod.minAmount} and ${phpConfig.symbol}${selectedMethod.maxAmount}`)
       return
     }
 
@@ -219,7 +228,7 @@ export default function AddFunds() {
                     <h3 className="font-mono text-base font-semibold text-slate-900 mb-1">{method.name}</h3>
                     <p className="font-mono text-xs text-slate-500 mb-2">{method.description}</p>
                     <p className="font-mono text-[10px] text-slate-400">
-                      Min: {config.symbol}{method.minAmount.toLocaleString()} | Max: {config.symbol}{method.maxAmount.toLocaleString()}
+                      Min: {phpConfig.symbol}{method.minAmount.toLocaleString()} | Max: {phpConfig.symbol}{method.maxAmount.toLocaleString()}
                     </p>
                   </button>
                 )
@@ -254,7 +263,7 @@ export default function AddFunds() {
               {/* Amount Input */}
               <form onSubmit={handleSubmit} className="mb-6">
                 <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
-                  Amount (Min: {config.symbol}{selectedMethod.minAmount.toLocaleString()} - Max: {config.symbol}{selectedMethod.maxAmount.toLocaleString()})
+                  Amount (Min: {phpConfig.symbol}{selectedMethod.minAmount.toLocaleString()} - Max: {phpConfig.symbol}{selectedMethod.maxAmount.toLocaleString()})
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-lg text-slate-400">{config.symbol}</span>

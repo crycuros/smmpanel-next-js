@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server'
-import { getCurrencyByCountry } from '@/lib/currency'
+import { NextRequest, NextResponse } from 'next/server'
 
 // Default country-currency mapping (fallback if settings API fails)
 const DEFAULT_COUNTRY_CURRENCIES: Record<string, string> = {
@@ -20,52 +19,52 @@ const DEFAULT_COUNTRY_CURRENCIES: Record<string, string> = {
   CA: 'CAD',
 }
 
-async function getSettings() {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/settings`, { 
-      cache: 'no-store' 
-    })
-    if (response.ok) {
-      return await response.json()
-    }
-  } catch (error) {
-    return null
-  }
+function getCurrencyForCountry(country: string): string {
+  return DEFAULT_COUNTRY_CURRENCIES[country] || 'USD'
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Use ipapi.co for geolocation (free tier)
-    const response = await fetch(`https://ipapi.co/json/`)
+    // Try to get country from Vercel headers first
+    // Vercel sets this header when deployed
+    const vercelCountry = request.headers.get('x-vercel-ip-country')
     
-    if (!response.ok) {
-      return NextResponse.json({ 
-        country: 'US', 
-        currency: 'USD',
-        error: 'Could not detect location'
+    // If we have a country code from headers, use it directly
+    if (vercelCountry && vercelCountry.length === 2) {
+      const currency = getCurrencyForCountry(vercelCountry)
+      
+      return NextResponse.json({
+        country: vercelCountry,
+        currency: currency,
+        source: 'vercel-header'
       })
     }
     
-    const data = await response.json()
-    const countryCode = data.country_code || 'US'
+    // Fallback: Use client-side IP detection via ipapi.co
+    const ipResponse = await fetch(`https://ipapi.co/json/`)
     
-    // Try to get currency from settings API
-    const settings = await getSettings()
-    let currency: string
-    
-    if (settings?.countryCurrencies?.[countryCode]) {
-      currency = settings.countryCurrencies[countryCode]
-    } else {
-      currency = DEFAULT_COUNTRY_CURRENCIES[countryCode] || 'USD'
+    if (ipResponse.ok) {
+      const data = await ipResponse.json()
+      const countryCode = data.country_code || 'US'
+      const currency = getCurrencyForCountry(countryCode)
+      
+      return NextResponse.json({
+        country: countryCode,
+        currency: currency,
+        city: data.city,
+        ip: data.ip,
+        source: 'ipapi'
+      })
     }
     
-    return NextResponse.json({
-      country: countryCode,
-      currency: currency,
-      city: data.city,
-      ip: data.ip
+    // Ultimate fallback
+    return NextResponse.json({ 
+      country: 'US', 
+      currency: 'USD',
+      error: 'Could not detect location'
     })
   } catch (error) {
+    console.error('Country detect error:', error)
     return NextResponse.json({ 
       country: 'US', 
       currency: 'USD' 

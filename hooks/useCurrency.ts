@@ -49,9 +49,12 @@ export function useCurrency() {
   useEffect(() => {
     async function detectAndSetCurrency() {
       try {
-        // First check if user has a saved preference
+        // Always detect fresh on Vercel to ensure correct currency
+        // Only use localStorage on localhost for development
+        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        
         let savedCurrency = null
-        if (typeof window !== 'undefined') {
+        if (isLocalhost && typeof window !== 'undefined') {
           savedCurrency = localStorage.getItem('user_currency')
         }
         
@@ -68,8 +71,8 @@ export function useCurrency() {
               detectedCurrency = data.currency
               country = data.country || 'US'
               
-              // Save to localStorage
-              if (typeof window !== 'undefined') {
+              // Save to localStorage only on localhost
+              if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
                 localStorage.setItem('user_currency', data.currency)
                 localStorage.setItem('user_country', data.country || 'US')
               }

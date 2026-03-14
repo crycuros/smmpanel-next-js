@@ -17,6 +17,8 @@ import {
   CheckCircle2
 } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default function Dashboard() {
   const [user, setUser] = useState<any>(null)
   const router = useRouter()

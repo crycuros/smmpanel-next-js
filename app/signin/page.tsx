@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Mail, Lock, ArrowRight, Chrome, Github } from "lucide-react"
+import { Mail, Lock, ArrowRight, Chrome, Github, Loader2 } from "lucide-react"
 import { CustomCursor } from "@/components/custom-cursor"
 import { useToast } from "@/components/toast-provider"
 import { supabase } from "@/lib/supabase"
 
-export default function SignIn() {
+function SignInContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -59,9 +59,7 @@ export default function SignIn() {
 
       if (response.ok) {
         addToast(`Welcome back, ${data.user?.name || 'User'}!`, "success", 2000)
-        // Store user data in localStorage or session
         localStorage.setItem('user', JSON.stringify(data.user))
-        // Redirect to dashboard
         setTimeout(() => {
           window.location.href = '/dashboard'
         }, 1500)
@@ -242,5 +240,21 @@ export default function SignIn() {
         </p>
       </motion.div>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50 to-rose-50 flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-rose-500" />
+    </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SignInContent />
+    </Suspense>
   )
 }

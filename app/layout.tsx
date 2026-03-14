@@ -50,7 +50,8 @@ export default function RootLayout({
         <CustomCursor />
         <ThemeProvider
           attribute="class"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <ToastProvider>

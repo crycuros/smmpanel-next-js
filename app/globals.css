@@ -120,21 +120,63 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    cursor: none !important;
   }
+  
+  /* Default cursor on all devices */
   html {
-    cursor: none;
+    cursor: auto;
   }
+  
   body {
     @apply bg-background text-foreground;
   }
-  a,
-  button,
-  input,
-  textarea,
-  select,
-  [data-cursor-hover] {
-    cursor: none !important;
+  
+  /* Custom cursor only on non-touch devices (desktop with mouse) */
+  @media (pointer: fine) {
+    html {
+      cursor: none;
+    }
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    [data-cursor-hover] {
+      cursor: none !important;
+    }
+  }
+  
+  /* Touch devices: show default cursor and enable active states */
+  @media (pointer: coarse) {
+    a,
+    button,
+    input,
+    textarea,
+    select,
+    [data-cursor-hover] {
+      cursor: pointer !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Active state for touch - simulates hover on tap */
+    .touch\\:hover:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+  }
+}
+
+@layer utilities {
+  /* Touch-friendly hover that activates on tap */
+  .group:hover .group-hover-touch:dir(ltr),
+  .group:active .group-hover-touch:dir(ltr) {
+    @apply opacity-80;
+  }
+  
+  @media (pointer: coarse) {
+    .group:hover .group-hover-touch:dir(ltr) {
+      @apply opacity-80;
+    }
   }
 }
 

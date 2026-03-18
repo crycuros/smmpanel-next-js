@@ -30,9 +30,13 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "MND - Marketer Next Door | SMM Panel",
-  description: "Manage your social media presence with powerful tools for growth, analytics, and automation",
-    generator: 'v0.app'
+  title: "MND - Marketer Next Door | Best SMM Panel Philippines",
+  description: "Best SMM Panel in the Philippines. Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
+  generator: 'v0.app',
+  icons: {
+    icon: '/mnd-favicon.svg',
+    apple: '/mnd-favicon.svg',
+  },
 }
 
 export const viewport: Viewport = {

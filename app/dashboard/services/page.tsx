@@ -151,7 +151,7 @@ export default function Services() {
     <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/30 to-rose-50/50">
       <BrutalistSidebar />
       
-      <div className="p-6 md:p-8 pt-20">
+      <div className="p-6 md:p-8 pt-20 pb-24 md:pb-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

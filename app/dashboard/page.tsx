@@ -46,7 +46,7 @@ export default function Dashboard() {
       <BrutalistSidebar />
       
       {/* Main Content */}
-      <div className="p-6 md:p-8 pt-20 md:pt-8">
+      <div className="p-6 md:p-8 pt-20 md:pt-8 pb-24 md:pb-8">
         {/* Welcome Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

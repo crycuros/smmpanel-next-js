@@ -87,10 +87,10 @@ export default function AdminSettings() {
   const [totpSecret, setTotpSecret] = useState("")
   const [verificationCode, setVerificationCode] = useState("")
   const [isLoading2FA, setIsLoading2FA] = useState(false)
-  const [selectedProvider, setSelectedProvider] = useState("weboostph")
+  const [selectedProvider, setSelectedProvider] = useState("smmgen")
   const [profitPercent, setProfitPercent] = useState("20")
   const [providers, setProviders] = useState<Provider[]>([
-    { id: "weboostph", name: "WeBoostPH", url: "https://weboostph.biz/api/v2", key: "" },
+    { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "" },
     { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" }
   ])
   const [customProviders, setCustomProviders] = useState<Provider[]>([])
@@ -172,19 +172,25 @@ export default function AdminSettings() {
       const uniqueProviders = parsed.filter((p: Provider, index: number, self: Provider[]) => 
         self.findIndex((x: Provider) => x.id === p.id) === index
       )
-      setCustomProviders(uniqueProviders)
-      // Merge with default providers
-      const merged = [
-        { id: "weboostph", name: "WeBoostPH", url: "https://weboostph.biz/api/v2", key: uniqueProviders.find((p: Provider) => p.id === "weboostph")?.key || "" },
-        { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" },
-        ...uniqueProviders.filter((p: Provider) => p.id !== "weboostph")
-      ]
-      setProviders(merged)
-    } else {
-      // Default WeBoostPH with required message
-      const weboostKey = localStorage.getItem('weboostph_api_key') || ""
+      // Migrate old weboostph/smmworld keys to smmgen
+      const migratedProviders = uniqueProviders.map((p: Provider) => {
+        if ((p.id === 'weboostph' || p.id === 'smmworld') && p.key) {
+          return { ...p, id: 'smmgen', name: 'SMMGen', url: 'https://my.smmgen.com/api/v2' }
+        }
+        return p
+      }).filter((p: Provider, index: number, self: Provider[]) => self.findIndex((x: Provider) => x.id === p.id) === index)
+      
+      setCustomProviders(migratedProviders.filter((p: Provider) => !['smmgen', 'generic'].includes(p.id)))
+      
+      // Use smmgen key from migrated providers
+      const smmgenKey = migratedProviders.find((p: Provider) => p.id === 'smmgen')?.key || ''
       setProviders([
-        { id: "weboostph", name: "WeBoostPH", url: "https://weboostph.biz/api/v2", key: weboostKey },
+        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: smmgenKey },
+        ...migratedProviders.filter((p: Provider) => p.id !== 'smmgen')
+      ])
+    } else {
+      setProviders([
+        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "" },
         { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" }
       ])
     }
@@ -192,7 +198,13 @@ export default function AdminSettings() {
     // Load selected provider
     const savedProvider = localStorage.getItem('selectedProvider')
     if (savedProvider) {
-      setSelectedProvider(savedProvider)
+      // Migrate old providers to smmgen
+      if (savedProvider === 'weboostph' || savedProvider === 'smmworld') {
+        setSelectedProvider('smmgen')
+        localStorage.setItem('selectedProvider', 'smmgen')
+      } else {
+        setSelectedProvider(savedProvider)
+      }
     }
     
     // Load profit percent

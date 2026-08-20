@@ -573,149 +573,54 @@ export default function AdminSettings() {
     await processImport(provider, selectedServices, selectedCategories, providerCategories)
   }
 
-  // Process the actual import
+  // Process the actual import - calls server-side API
   const processImport = async (
     prov: Provider, 
     selectedSvs: Set<string>, 
     selectedCats: Set<string>, 
     categories: ProviderCategory[]
   ) => {
-    const provider = prov
     const profit = parseFloat(profitPercent) || 0
     setIsImporting(true)
     setImportStatus(null)
     setShowRoutingModal(false)
     
     try {
-      // Get existing categories from database
-      const { data: existingCategories } = await supabase
-        .from('categories')
-        .select('category_id, category_name')
-
-      // Create a map of category names to IDs
-      const categoryMap = new Map()
-      existingCategories?.forEach((cat: any) => {
-        categoryMap.set(cat.category_name.toLowerCase(), cat.category_id)
+      // Apply routing to category names for partial selections
+      const processedCategories = categories.map(cat => {
+        const partialMatch = partialSelections.find(p => p.category === cat.name)
+        let resolvedName = cat.name
+        if (partialMatch) {
+          if (routingOption === "new") {
+            resolvedName = newCategoryName || cat.name
+          } else if (routingOption === "existing") {
+            // resolvedName stays as-is, server will look up by name
+          }
+        }
+        return { ...cat, name: resolvedName }
       })
 
-      // Process services and insert them
-      let importedCount = 0
-      let skippedCount = 0
+      const response = await fetch('/api/admin/import-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          categories: processedCategories,
+          selectedServiceIds: Array.from(selectedSvs),
+          profitPercent: profit,
+          providerId: prov.id,
+          providerCurrency: (prov as any).currency || 'PHP'
+        })
+      })
 
-      for (const category of categories) {
-        // Get selected service IDs for this category
-        const categorySelectedServiceIds = category.services
-          .filter(s => selectedSvs.has(s.service))
-          .map(s => s.service)
-        
-        if (categorySelectedServiceIds.length === 0) continue
-        
-        // Determine category name based on routing
-        let categoryName = category.name
-        
-        // If partial selection with routing, category was already set in modal
-        const partialMatch = partialSelections.find(p => p.category === category.name)
-        if (partialMatch) {
-          // Use the routed category name
-          if (routingOption === "new") {
-            categoryName = newCategoryName || category.name
-          } else if (routingOption === "existing") {
-            // Get category name from existing ID
-            const existingCat = existingCategories?.find((c: any) => c.category_id === parseInt(existingCategoryId))
-            if (existingCat) categoryName = existingCat.category_name
-          }
-          // For standalone, we'll use a special handling
-        }
-        
-        // Find or create category
-        let categoryId = categoryMap.get(categoryName.toLowerCase())
-        
-        if (!categoryId) {
-          // Insert new category with provider source indicator for full selections
-          const categoryToInsert = { category_name: categoryName }
-          
-          const { data: newCategory, error: catError } = await supabase
-            .from('categories')
-            .insert([categoryToInsert])
-            .select('category_id')
-            .single()
-          
-          if (!catError && newCategory) {
-            categoryId = newCategory.category_id
-            categoryMap.set(categoryName.toLowerCase(), categoryId)
-          }
-        }
+      const result = await response.json()
 
-        if (!categoryId) {
-          categoryId = 1
-        }
-
-        // Process selected services in this category
-        for (const svc of category.services) {
-          if (!selectedSvs.has(svc.service)) continue
-          
-          // Calculate price with profit - convert USD to PHP first if needed
-          const basePrice = parseFloat(svc.rate) || 0
-          // Convert USD to PHP (1 USD = 56 PHP) for SMMWORLD, then add profit
-          const providerCurrency = (prov as any).currency || 'PHP'
-          const phpPrice = providerCurrency === 'USD' ? basePrice * 56 : basePrice
-          const sellingPrice = phpPrice + (phpPrice * profit / 100)
-
-          // Check if service already exists (by name and category)
-          // Use ilike for case-insensitive match to handle special characters better
-          const { data: existingService } = await supabase
-            .from('services')
-            .select('service_id')
-            .ilike('service_name', svc.name)
-            .eq('category_id', categoryId)
-            .maybeSingle()
-
-          if (existingService) {
-            // Update existing service
-            const { error: updateError } = await supabase
-              .from('services')
-              .update({
-                service_price: sellingPrice,
-                service_profit: profit.toString(),
-                service_min: parseInt(svc.min) || 1,
-                service_max: parseInt(svc.max) || 100000,
-                service_description: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`,
-                api_provider: provider.id
-              })
-              .eq('service_id', existingService.service_id)
-            
-            if (updateError) {
-              console.error('Update error:', updateError)
-            }
-            skippedCount++
-          } else {
-            // Insert new service
-            const { error: insertError } = await supabase
-              .from('services')
-              .insert([{
-                service_name: svc.name,
-                category_id: categoryId,
-                service_price: sellingPrice,
-                service_profit: profit.toString(),
-                service_min: parseInt(svc.min) || 1,
-                service_max: parseInt(svc.max) || 100000,
-                service_description: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`,
-                service_type: 'default',
-                api_provider: provider.id
-              }])
-            
-            if (insertError) {
-              console.error('Insert error for service:', svc.name, insertError)
-            } else {
-              importedCount++
-            }
-          }
-        }
+      if (!response.ok) {
+        throw new Error(result.error || 'Import failed')
       }
 
       setImportStatus({
         type: 'success',
-        message: `Import complete! ${importedCount} new services imported, ${skippedCount} updated. Profit: ${profit}%`
+        message: result.message || `Import complete! ${result.imported} new, ${result.updated} updated.`
       })
 
     } catch (error: any) {

@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// This endpoint should be protected by a secret key
 const CRON_SECRET = process.env.CRON_SECRET
 
 export async function GET(request: NextRequest) {
-  // 1. Verify authorization
   const authHeader = request.headers.get('authorization')
   if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  )
 
   try {
-    // 2. Get all active providers (api_status '2' = active)
     const { data: providers } = await supabase
       .from('service_api')
       .select('*')
@@ -28,20 +27,18 @@ export async function GET(request: NextRequest) {
 
     const results = []
 
-    // 3. Trigger sync for each provider
     for (const provider of providers) {
       try {
-        // We call our smart-sync logic internally or refactor it to a shared service
-        // For now, we'll perform a fetch to the smart-sync endpoint
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://smmfeeds.com'
-        
-        const syncResponse = await fetch(`${baseUrl}/api/smart-sync-services`, {
+        const syncResponse = await fetch('https://smmfeeds.com/api/smart-sync-services', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${CRON_SECRET}`,
+          },
           body: JSON.stringify({
             apiKey: provider.api_key,
             apiUrl: provider.api_url,
-            providerId: provider.api_name
+            providerId: provider.api_name,
           })
         })
 

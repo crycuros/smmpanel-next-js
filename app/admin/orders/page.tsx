@@ -62,10 +62,10 @@ export default function AdminOrders() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch orders with user info (client_id references clients table)
+      // Fetch orders
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('*, clients(username, email)')
+        .select('*')
         .order('order_id', { ascending: false })
         .limit(10000)
 
@@ -74,13 +74,19 @@ export default function AdminOrders() {
         .from('services')
         .select('service_id, service_name')
 
+      // Fetch clients for user info
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('client_id, username, email')
+
       if (ordersData) {
-        // Add service names to orders
         const ordersWithServices = ordersData.map(order => {
           const service = servicesData?.find(s => s.service_id === order.service_id)
+          const client = clientsData?.find(c => c.client_id === order.client_id)
           return {
             ...order,
-            service_name: service?.service_name || `Service #${order.service_id}`
+            service_name: service?.service_name || `Service #${order.service_id}`,
+            clients: client || { username: 'Unknown', email: '' }
           }
         })
         setOrders(ordersWithServices)

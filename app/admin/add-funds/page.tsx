@@ -59,26 +59,33 @@ export default function AdminAddFunds() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch fund requests (user_id references clients table)
+      // Fetch fund requests
       const { data: requestsData } = await supabase
         .from('funds')
-        .select('*, clients(username, email, balance)')
+        .select('*')
         .order('id', { ascending: false })
         .limit(10000)
 
-      if (requestsData) {
-        setFundRequests(requestsData)
-      }
-
-      // Fetch users for manual add
-      const { data: usersData } = await supabase
+      // Fetch clients separately for user info
+      const { data: clientsData } = await supabase
         .from('clients')
         .select('client_id, username, email, balance')
         .order('client_id', { ascending: false })
         .limit(10000)
 
-      if (usersData) {
-        setUsers(usersData)
+      // Merge fund requests with client info
+      if (requestsData && clientsData) {
+        const merged = requestsData.map(fund => {
+          const client = clientsData.find(c => c.client_id === fund.user_id)
+          return { ...fund, clients: client || null }
+        })
+        setFundRequests(merged)
+      } else {
+        setFundRequests(requestsData || [])
+      }
+
+      if (clientsData) {
+        setUsers(clientsData)
       }
     } catch (error) {
       console.error('Error fetching data:', error)

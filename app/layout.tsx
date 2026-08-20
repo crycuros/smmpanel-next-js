@@ -46,14 +46,6 @@ export const metadata: Metadata = {
     description: "Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
     url: "https://smmfeeds.com",
     siteName: "SMMFeeds",
-    images: [
-      {
-        url: "https://smmfeeds.com/placeholder.jpg",
-        width: 1200,
-        height: 630,
-        alt: "SMMFeeds - Best SMM Panel Philippines",
-      },
-    ],
     locale: "en_PH",
     type: "website",
   },
@@ -61,7 +53,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SMMFeeds - Best SMM Panel Philippines",
     description: "Get instant social media followers, likes, views and engagement.",
-    images: ["https://smmfeeds.com/placeholder.jpg"],
   },
 }
 

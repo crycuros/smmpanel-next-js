@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f23;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1a3e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0d0d2b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6c5ce7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a855f7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6c5ce7;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#a855f7;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="300" fill="url(#glow)" opacity="0.3"/>
+  <circle cx="1100" cy="500" r="250" fill="url(#glow)" opacity="0.2"/>
+  <circle cx="600" cy="315" r="400" fill="url(#glow)" opacity="0.1"/>
+
+  <!-- Grid pattern -->
+  <g opacity="0.05" stroke="#6c5ce7" stroke-width="0.5">
+    <line x1="0" y1="0" x2="0" y2="630"/>
+    <line x1="60" y1="0" x2="60" y2="630"/>
+    <line x1="120" y1="0" x2="120" y2="630"/>
+    <line x1="180" y1="0" x2="180" y2="630"/>
+    <line x1="240" y1="0" x2="240" y2="630"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="360" y1="0" x2="360" y2="630"/>
+    <line x1="420" y1="0" x2="420" y2="630"/>
+    <line x1="480" y1="0" x2="480" y2="630"/>
+    <line x1="540" y1="0" x2="540" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="660" y1="0" x2="660" y2="630"/>
+    <line x1="720" y1="0" x2="720" y2="630"/>
+    <line x1="780" y1="0" x2="780" y2="630"/>
+    <line x1="840" y1="0" x2="840" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="960" y1="0" x2="960" y2="630"/>
+    <line x1="1020" y1="0" x2="1020" y2="630"/>
+    <line x1="1080" y1="0" x2="1080" y2="630"/>
+    <line x1="1140" y1="0" x2="1140" y2="630"/>
+    <line x1="1200" y1="0" x2="1200" y2="630"/>
+    <line x1="0" y1="0" x2="1200" y2="0"/>
+    <line x1="0" y1="60" x2="1200" y2="60"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="180" x2="1200" y2="180"/>
+    <line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="360" x2="1200" y2="360"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+    <line x1="0" y1="480" x2="1200" y2="480"/>
+    <line x1="0" y1="540" x2="1200" y2="540"/>
+    <line x1="0" y1="600" x2="1200" y2="600"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent)"/>
+
+  <!-- Logo icon (rocket) -->
+  <g transform="translate(540, 160)">
+    <circle cx="0" cy="0" r="45" fill="url(#accent)" opacity="0.2"/>
+    <text x="0" y="15" text-anchor="middle" font-size="50" fill="url(#accent)">🚀</text>
+  </g>
+
+  <!-- Main title -->
+  <text x="600" y="280" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="bold" fill="white" letter-spacing="2">
+    SMMFeeds
+  </text>
+
+  <!-- Accent underline -->
+  <rect x="450" y="300" width="300" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Subtitle -->
+  <text x="600" y="355" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#a0a0c0" font-weight="400">
+    Best SMM Panel in the Philippines
+  </text>
+
+  <!-- Feature pills -->
+  <g transform="translate(600, 420)">
+    <!-- Pill 1 -->
+    <rect x="-340" y="-22" width="180" height="44" rx="22" fill="#6c5ce7" opacity="0.15" stroke="#6c5ce7" stroke-width="1"/>
+    <text x="-250" y="6" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#a78bfa" font-weight="500">⚡ Instant Delivery</text>
+
+    <!-- Pill 2 -->
+    <rect x="-120" y="-22" width="180" height="44" rx="22" fill="#6c5ce7" opacity="0.15" stroke="#6c5ce7" stroke-width="1"/>
+    <text x="-30" y="6" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#a78bfa" font-weight="500">💰 Affordable</text>
+
+    <!-- Pill 3 -->
+    <rect x="100" y="-22" width="200" height="44" rx="22" fill="#6c5ce7" opacity="0.15" stroke="#6c5ce7" stroke-width="1"/>
+    <text x="200" y="6" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#a78bfa" font-weight="500">🛡️ 24/7 Support</text>
+  </g>
+
+  <!-- Social icons row -->
+  <g transform="translate(600, 500)" opacity="0.7">
+    <text x="-180" y="8" text-anchor="middle" font-size="28">📘</text>
+    <text x="-100" y="8" text-anchor="middle" font-size="28">📸</text>
+    <text x="-20" y="8" text-anchor="middle" font-size="28">🎵</text>
+    <text x="60" y="8" text-anchor="middle" font-size="28">▶️</text>
+    <text x="140" y="8" text-anchor="middle" font-size="28">🐦</text>
+    <text x="200" y="8" text-anchor="middle" font-size="28">👻</text>
+  </g>
+
+  <!-- URL -->
+  <text x="600" y="580" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#6c5ce7" font-weight="600" letter-spacing="3">
+    smmfeeds.com
+  </text>
+
+  <!-- Accent line bottom -->
+  <rect x="0" y="626" width="1200" height="4" fill="url(#accent)"/>
+</svg>

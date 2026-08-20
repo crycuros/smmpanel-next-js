@@ -485,22 +485,16 @@ export default function AdminCategories() {
               </button>
               <button
                 onClick={async () => {
-                  // Sync from external API via server-side route (fixes CORS)
-                  const apiKey = process.env.NEXT_PUBLIC_SMM_API_KEY
-                  const apiUrl = process.env.NEXT_PUBLIC_SMM_API_URL
-                  if (!apiKey || !apiUrl) {
-                    setSaveStatus({ type: 'error', message: 'API not configured' })
-                    return
-                  }
+                  const apiKey = process.env.NEXT_PUBLIC_SMMGEN_API_KEY || '187121485b0e05ddd39b23a993ab415c'
+                  const apiUrl = 'https://my.smmgen.com/api/v2'
                   setIsSyncing(true)
                   setSyncProgress({ current: 0, total: 0 })
-                  setSaveStatus({ type: 'success', message: 'Syncing from API...' })
+                  setSaveStatus({ type: 'success', message: 'Syncing from SMMGen...' })
                   try {
-                    // Call our server-side API to fetch from external API (bypasses CORS)
-                    const syncRes = await fetch('/api/sync-services', {
+                    const syncRes = await fetch('/api/smart-sync-services', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ apiKey, apiUrl })
+                      body: JSON.stringify({ apiKey, apiUrl, providerId: 'smmgen' })
                     })
                     const syncData = await syncRes.json()
                     
@@ -508,25 +502,8 @@ export default function AdminCategories() {
                       throw new Error(syncData.error)
                     }
                     
-                    const { categories: catData, services: svcData } = syncData
-                    
-                    if (catData && Array.isArray(catData) && catData.length > 0) {
-                      // Delete existing and insert new
-                      setSyncProgress({ current: 0, total: catData.length })
-                      await supabase.from('categories').delete().gt('category_id', -1)
-                      await supabase.from('categories').insert(catData)
-                    }
-                    
-                    if (svcData && Array.isArray(svcData) && svcData.length > 0) {
-                      setSyncProgress({ current: 0, total: svcData.length })
-                      // Delete existing and insert new (original behavior)
-                      await supabase.from('services').delete().gt('service_id', -1)
-                      await supabase.from('services').insert(svcData)
-                      setSyncProgress({ current: svcData.length, total: svcData.length })
-                    }
-                    
                     setIsSyncing(false)
-                    setSaveStatus({ type: 'success', message: `Synced ${syncData.stats?.categoriesCount || 0} categories and ${syncData.stats?.servicesCount || 0} services!` })
+                    setSaveStatus({ type: 'success', message: syncData.message || 'Sync complete!' })
                     fetchCategories()
                   } catch (err: any) {
                     console.error('Sync error:', err)

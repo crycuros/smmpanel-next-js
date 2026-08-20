@@ -36,20 +36,6 @@ import {
 // Pre-defined SMM providers
 const DEFAULT_PROVIDERS = [
   {
-    id: "weboostph",
-    name: "WeBoostPH",
-    url: "https://weboostph.biz/api/v2",
-    key: "",
-    currency: "PHP"
-  },
-  {
-    id: "smmworld",
-    name: "SMM World",
-    url: "https://smmworld.org/api/v2",
-    key: "",
-    currency: "USD"
-  },
-  {
     id: "smmgen",
     name: "SMMGen",
     url: "https://my.smmgen.com/api/v2",

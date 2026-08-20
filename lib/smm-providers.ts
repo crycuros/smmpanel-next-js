@@ -8,16 +8,6 @@ export interface ProviderConfig {
 }
 
 export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
-  weboostph: {
-    url: process.env.SMM_API_URL || process.env.NEXT_PUBLIC_SMM_API_URL || 'https://weboostph.biz/api/v2',
-    key: process.env.SMM_API_KEY || process.env.NEXT_PUBLIC_SMM_API_KEY || '',
-    currency: 'PHP',
-  },
-  smmworld: {
-    url: 'https://smmworld.org/api/v2',
-    key: process.env.SMMWORLD_API_KEY || '',
-    currency: 'USD',
-  },
   smmgen: {
     url: 'https://my.smmgen.com/api/v2',
     key: process.env.SMMGEN_API_KEY || '',

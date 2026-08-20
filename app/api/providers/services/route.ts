@@ -1,22 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Provider API endpoints
-const PROVIDER_APIS: Record<string, { baseUrl: string; keyParam: string }> = {
-  weboostph: {
-    baseUrl: 'https://weboostph.biz/api/v2',
-    keyParam: 'key'
-  },
-  smmworld: {
-    baseUrl: 'https://smmworld.org/api/v2',
-    keyParam: 'key'
-  },
-  // Add more providers here as needed
-};
+import { getProviderConfig, PROVIDER_CONFIGS } from '@/lib/smm-providers';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { provider, apiKey, action, method = 'POST', data } = body;
+    const { provider, apiKey, action, data } = body;
 
     if (!provider || !apiKey) {
       return NextResponse.json(
@@ -25,32 +13,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const providerConfig = PROVIDER_APIS[provider];
-    if (!providerConfig) {
+    const config = PROVIDER_CONFIGS[provider];
+    if (!config) {
       return NextResponse.json(
         { error: 'Unknown provider' },
         { status: 400 }
       );
     }
 
-    // Build the URL
-    const url = new URL(providerConfig.baseUrl);
-    
-    // Build request body
+    const url = new URL(config.url);
+
     const params = new URLSearchParams();
-    params.append(providerConfig.keyParam, apiKey);
+    params.append('key', apiKey);
     if (action) {
       params.append('action', action);
     }
-    
-    // Add additional data parameters
+
     if (data && typeof data === 'object') {
-      for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-        params.append(key, String(value));
+      for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+        params.append(k, String(v));
       }
     }
 
-    // Make the request
     const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
@@ -77,7 +61,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Also support GET for simple service listing
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const provider = searchParams.get('provider') || 'weboostph';
@@ -92,22 +75,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const providerConfig = PROVIDER_APIS[provider];
-    if (!providerConfig) {
+    const config = PROVIDER_CONFIGS[provider];
+    if (!config) {
       return NextResponse.json(
         { error: 'Unknown provider' },
         { status: 400 }
       );
     }
 
-    // Build the URL with query params
-    const url = new URL(providerConfig.baseUrl);
-    url.searchParams.append(providerConfig.keyParam, apiKey);
+    const url = new URL(config.url);
+    url.searchParams.append('key', apiKey);
     if (action) {
       url.searchParams.append('action', action);
     }
 
-    // Make the request server-side (bypasses CORS)
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {

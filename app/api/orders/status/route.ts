@@ -1,68 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getProviderConfig } from '@/lib/smm-providers';
 
-// SMM API Configuration
-const SMM_API_URL = 'https://weboostph.biz/api/v2';
-const SMM_API_KEY = process.env.NEXT_PUBLIC_SMM_API_KEY || 'ba0bdd77f025b1fc19b321ecaf0acf67';
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// Look up which provider an order belongs to (via order → service → api_provider)
+async function resolveOrderProvider(apiOrderId: number, provider?: string): Promise<{ url: string; key: string } | null> {
+  if (provider) {
+    const config = getProviderConfig(provider);
+    return config.key ? config : null;
+  }
+
+  // Auto-detect from DB
+  const { data: order } = await supabase
+    .from('orders')
+    .select('service_id, services(api_provider)')
+    .eq('api_orderid', apiOrderId)
+    .single();
+
+  const providerId = (order as any)?.services?.api_provider || 'weboostph';
+  const config = getProviderConfig(providerId);
+  return config.key ? config : null;
+}
+
+async function callProviderApi(url: string, key: string, params: Record<string, string>) {
+  const formData = new URLSearchParams();
+  formData.append('key', key);
+  for (const [k, v] of Object.entries(params)) {
+    formData.append(k, v);
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formData.toString(),
+  });
+
+  // SMM APIs sometimes return 400 with valid JSON error info
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Provider API error ${response.status}: ${text.substring(0, 200)}`);
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orderId, orderIds } = body;
+    const { orderId, orderIds, provider } = body;
 
-    console.log('Order status request:', { orderId, orderIds });
-    
-    let response;
-    
-    // Check if single order or multiple orders
     if (orderIds && Array.isArray(orderIds)) {
-      // Multiple orders status check
-      const formData = new URLSearchParams();
-      formData.append('key', SMM_API_KEY);
-      formData.append('action', 'status');
-      formData.append('orders', orderIds.join(','));
-      
-      console.log('Making request to SMM API with body:', formData.toString());
-      
-      response = await fetch(SMM_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
+      // Batch status check — all orders assumed same provider
+      const config = provider ? getProviderConfig(provider) : await resolveOrderProvider(orderIds[0], provider);
+      if (!config) {
+        return NextResponse.json({ error: 'Provider not configured' }, { status: 500 });
+      }
+      const data = await callProviderApi(config.url, config.key, {
+        action: 'status',
+        orders: orderIds.join(','),
       });
-    } 
-    else if (orderId) {
-      // Single order status check
-      const formData = new URLSearchParams();
-      formData.append('key', SMM_API_KEY);
-      formData.append('action', 'status');
-      formData.append('order', orderId.toString());
-      
-      console.log('Making request to SMM API with body:', formData.toString());
-      
-      response = await fetch(SMM_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData.toString(),
-      });
-    } else {
-      return NextResponse.json(
-        { error: 'orderId or orderIds is required' },
-        { status: 400 }
-      );
+      return NextResponse.json(data);
     }
 
-    console.log('SMM API Response status:', response.status);
-    
-    if (!response.ok) {
-      throw new Error(`SMM API error: ${response.status}`);
+    if (orderId) {
+      const config = await resolveOrderProvider(orderId, provider);
+      if (!config) {
+        return NextResponse.json({ error: 'Provider not configured' }, { status: 500 });
+      }
+      const data = await callProviderApi(config.url, config.key, {
+        action: 'status',
+        order: orderId.toString(),
+      });
+      return NextResponse.json(data);
     }
 
-    const data = await response.json();
-    console.log('SMM API Response data:', data);
-    return NextResponse.json(data);
+    return NextResponse.json(
+      { error: 'orderId or orderIds is required' },
+      { status: 400 }
+    );
 
   } catch (error) {
     console.error('SMM Order Status Error:', error);
@@ -73,44 +92,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Also support GET requests for simpler integration
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const orderId = searchParams.get('orderId');
-
-  console.log('GET Order status request:', { orderId });
+  const provider = searchParams.get('provider') || undefined;
 
   if (!orderId) {
-    return NextResponse.json(
-      { error: 'orderId is required' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'orderId is required' }, { status: 400 });
   }
 
   try {
-    const formData = new URLSearchParams();
-    formData.append('key', SMM_API_KEY);
-    formData.append('action', 'status');
-    formData.append('order', orderId);
-    
-    console.log('Making GET request to SMM API with body:', formData.toString());
-    
-    const response = await fetch(SMM_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData.toString(),
-    });
-
-    console.log('SMM API Response status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`SMM API error: ${response.status}`);
+    const config = await resolveOrderProvider(parseInt(orderId), provider);
+    if (!config) {
+      return NextResponse.json({ error: 'Provider not configured' }, { status: 500 });
     }
-
-    const data = await response.json();
-    console.log('SMM API Response data:', data);
+    const data = await callProviderApi(config.url, config.key, {
+      action: 'status',
+      order: orderId,
+    });
     return NextResponse.json(data);
   } catch (error) {
     console.error('SMM Order Status Error:', error);

@@ -1,30 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSupabase, getUser, getDbUser } from '@/lib/auth-utils';
 import { getExchangeRates, convertCurrency } from '@/lib/currency-service';
+import { getProviderConfig, getProviderCurrency } from '@/lib/smm-providers';
 import { z } from 'zod';
-
-// SMM API Configuration - Moved to server-side only env variables
-const SMM_API_URL = process.env.SMM_API_URL || 'https://weboostph.biz/api/v2';
-const SMM_API_KEY = process.env.SMM_API_KEY || process.env.NEXT_PUBLIC_SMM_API_KEY;
 
 // Base currency of the site
 const SITE_BASE_CURRENCY = 'PHP';
-
-// Provider configurations
-const PROVIDER_CONFIGS: Record<string, { url: string; key: string }> = {
-  weboostph: {
-    url: SMM_API_URL,
-    key: SMM_API_KEY || ''
-  },
-  smmworld: {
-    url: 'https://smmworld.org/api/v2',
-    key: process.env.SMMWORLD_API_KEY || ''
-  }
-};
-
-function getProviderConfig(providerId: string) {
-  return PROVIDER_CONFIGS[providerId] || PROVIDER_CONFIGS['weboostph'];
-}
 
 const DEFAULT_PROFIT_PERCENT = 20;
 
@@ -79,15 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Identify provider and its currency
     const providerId = serviceData?.api_provider || 'weboostph';
-    
-    // Fetch provider currency (default to PHP for weboost, USD for smmworld if not specified)
-    const { data: providerInfo } = await supabase
-      .from('service_api')
-      .select('currency')
-      .eq('api_name', providerId)
-      .single();
-    
-    const providerCurrency = providerInfo?.currency || (providerId === 'smmworld' ? 'USD' : 'PHP');
+    const providerCurrency = getProviderCurrency(providerId);
 
     // service_price in our DB is assumed to be in PHP (Base)
     const customerPricePHP = (parseFloat(serviceData.service_price) || 0) * (quantity / 1000);
@@ -193,7 +166,7 @@ async function submitOrderToProvider(
 ) {
   try {
     const providerConfig = getProviderConfig(providerId);
-    if (!providerConfig.key) throw new Error('Provider API key missing');
+    if (!providerConfig.key) throw new Error(`Provider API key missing for ${providerId}`);
 
     const formData = new URLSearchParams();
     formData.append('key', providerConfig.key);
@@ -210,9 +183,6 @@ async function submitOrderToProvider(
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
     });
-
-    if (!response.ok) throw new Error(`Provider API error: ${response.status}`);
-    return await response.json();
   } catch (error) {
     console.error('Provider API Error:', error);
     return { error: 'Failed to submit order to provider' };
@@ -233,10 +203,15 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     if (action === 'balance') {
-      const response = await fetch(SMM_API_URL, {
+      const providerId = searchParams.get('provider') || 'weboostph';
+      const providerConfig = getProviderConfig(providerId);
+      if (!providerConfig.key) {
+        return NextResponse.json({ error: 'Provider API key not configured' }, { status: 500 });
+      }
+      const response = await fetch(providerConfig.url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ key: SMM_API_KEY!, action: 'balance' }).toString(),
+        body: new URLSearchParams({ key: providerConfig.key, action: 'balance' }).toString(),
       });
       return NextResponse.json(await response.json());
     } 

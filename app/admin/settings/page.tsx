@@ -50,6 +50,13 @@ const DEFAULT_PROVIDERS = [
     currency: "USD"
   },
   {
+    id: "smmgen",
+    name: "SMMGen",
+    url: "https://my.smmgen.com/api/v2",
+    key: "",
+    currency: "USD"
+  },
+  {
     id: "generic",
     name: "Generic API",
     url: "https://example.com/api",

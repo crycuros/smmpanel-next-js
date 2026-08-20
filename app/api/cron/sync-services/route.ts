@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(supabaseUrl, supabaseKey)
 
   try {
-    // 2. Get all active providers
+    // 2. Get all active providers (api_status '2' = active)
     const { data: providers } = await supabase
       .from('service_api')
       .select('*')
-      .eq('status', '1')
+      .eq('api_status', '2')
 
     if (!providers || providers.length === 0) {
       return NextResponse.json({ message: 'No active providers found' })
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       try {
         // We call our smart-sync logic internally or refactor it to a shared service
         // For now, we'll perform a fetch to the smart-sync endpoint
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://smmfeeds.com'
         
         const syncResponse = await fetch(`${baseUrl}/api/smart-sync-services`, {
           method: 'POST',

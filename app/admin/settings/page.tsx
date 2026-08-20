@@ -90,8 +90,8 @@ export default function AdminSettings() {
   const [selectedProvider, setSelectedProvider] = useState("smmgen")
   const [profitPercent, setProfitPercent] = useState("20")
   const [providers, setProviders] = useState<Provider[]>([
-    { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "" },
-    { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" }
+    { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "", currency: "USD" },
+    { id: "generic", name: "Generic API", url: "https://example.com/api", key: "", currency: "PHP" }
   ])
   const [customProviders, setCustomProviders] = useState<Provider[]>([])
   const [showAddProvider, setShowAddProvider] = useState(false)
@@ -185,13 +185,13 @@ export default function AdminSettings() {
       // Use smmgen key from migrated providers
       const smmgenKey = migratedProviders.find((p: Provider) => p.id === 'smmgen')?.key || ''
       setProviders([
-        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: smmgenKey },
+        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: smmgenKey, currency: "USD" },
         ...migratedProviders.filter((p: Provider) => p.id !== 'smmgen')
       ])
     } else {
       setProviders([
-        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "" },
-        { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" }
+        { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: "", currency: "USD" },
+        { id: "generic", name: "Generic API", url: "https://example.com/api", key: "", currency: "PHP" }
       ])
     }
     

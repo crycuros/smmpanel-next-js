@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Mail, Lock, ArrowRight, Chrome, Github, Loader2 } from "lucide-react"
 import { CustomCursor } from "@/components/custom-cursor"
+import { useUser } from "@/hooks/use-user"
 import { useToast } from "@/components/toast-provider"
 import { supabase } from "@/lib/supabase"
 
@@ -16,14 +17,15 @@ function SignInContent() {
   const { addToast } = useToast()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, loading } = useUser()
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    if (!loading && user) {
       router.push('/dashboard')
     }
-  }, [router])
+  }, [user, loading, router])
+
 
   // Handle OAuth callback
   useEffect(() => {

@@ -1,4 +1,5 @@
 // Currency configuration based on country
+import { supabase } from '@/lib/supabase'
 export interface CurrencyConfig {
   code: string
   symbol: string
@@ -8,20 +9,20 @@ export interface CurrencyConfig {
 
 export const CURRENCIES: Record<string, CurrencyConfig> = {
   PHP: { code: 'PHP', symbol: '₱', name: 'Philippine Peso', exchangeRate: 1 },
-  USD: { code: 'USD', symbol: '$', name: 'US Dollar', exchangeRate: 0.018 }, // ₱56 = $1
-  EUR: { code: 'EUR', symbol: '€', name: 'Euro', exchangeRate: 0.016 }, // ₱62 = €1
-  GBP: { code: 'GBP', symbol: '£', name: 'British Pound', exchangeRate: 0.014 }, // ₱70 = £1
-  JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen', exchangeRate: 2.65 }, // ₱1 = ¥2.65
-  KRW: { code: 'KRW', symbol: '₩', name: 'Korean Won', exchangeRate: 24 }, // ₱1 = ₩24
-  SGD: { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', exchangeRate: 0.024 }, // ₱42 = S$1
-  MYR: { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', exchangeRate: 0.079 }, // ₱12.6 = RM1
-  THB: { code: 'THB', symbol: '฿', name: 'Thai Baht', exchangeRate: 0.59 }, // ₱1 = ฿0.59
-  IDR: { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', exchangeRate: 280 }, // ₱1 = Rp280
-  VND: { code: 'VND', symbol: '₫', name: 'Vietnamese Dong', exchangeRate: 430 }, // ₱1 = ₫430
-  CNY: { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', exchangeRate: 0.13 }, // ₱7.5 = ¥1
-  INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee', exchangeRate: 1.48 }, // ₱1 = ₹1.48
-  AUD: { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', exchangeRate: 0.027 }, // ₱37 = A$1
-  CAD: { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', exchangeRate: 0.025 }, // ₱40 = C$1
+  USD: { code: 'USD', symbol: '$', name: 'US Dollar', exchangeRate: 0.01632 }, // Updated: 1 PHP = 0.01632 USD (from 61.25 PHP/USD)
+  EUR: { code: 'EUR', symbol: '€', name: 'Euro', exchangeRate: 0.015 }, // Updated: ₱66 = €1
+  GBP: { code: 'GBP', symbol: '£', name: 'British Pound', exchangeRate: 0.013 }, // Updated: ₱76 = £1
+  JPY: { code: 'JPY', symbol: '¥', name: 'Japanese Yen', exchangeRate: 2.58 }, // Updated: ₱1 = ¥2.58
+  KRW: { code: 'KRW', symbol: '₩', name: 'Korean Won', exchangeRate: 22.5 }, // Updated: ₱1 = ₩22.5
+  SGD: { code: 'SGD', symbol: 'S$', name: 'Singapore Dollar', exchangeRate: 0.022 }, // Updated: ₱45 = S$1
+  MYR: { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', exchangeRate: 0.078 }, // Updated: ₱12.8 = RM1
+  THB: { code: 'THB', symbol: '฿', name: 'Thai Baht', exchangeRate: 0.60 }, // Updated: ₱1 = ฿0.60
+  IDR: { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', exchangeRate: 265 }, // Updated: ₱1 = Rp265
+  VND: { code: 'VND', symbol: '₫', name: 'Vietnamese Dong', exchangeRate: 415 }, // Updated: ₱1 = ₫415
+  CNY: { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', exchangeRate: 0.12 }, // Updated: ₱8.3 = ¥1
+  INR: { code: 'INR', symbol: '₹', name: 'Indian Rupee', exchangeRate: 1.36 }, // Updated: ₱1 = ₹1.36
+  AUD: { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', exchangeRate: 0.025 }, // Updated: ₱40 = A$1
+  CAD: { code: 'CAD', symbol: 'C$', name: 'Canadian Dollar', exchangeRate: 0.022 }, // Updated: ₱45 = C$1
 }
 
 // Default currency per country code
@@ -60,11 +61,15 @@ export function getCurrencyConfig(currencyCode: string): CurrencyConfig {
 }
 
 // Convert price from admin base currency (PHP) to user's selected currency
+export async function getLiveRates() {
+  const { data } = await supabase.from('site_settings').select('forex_rates').single();
+  return data?.forex_rates;
+}
+
 export function convertPrice(phpAmount: number, targetCurrency: string): number {
+  // Note: This remains synchronous for UI speed, but can be updated by a provider/context
   const targetConfig = CURRENCIES[targetCurrency]
   if (!targetConfig) return phpAmount
-  
-  // Convert PHP to target currency
   return phpAmount * targetConfig.exchangeRate
 }
 
@@ -81,23 +86,33 @@ export function formatConvertedPrice(phpAmount: number, targetCurrency: string):
   return `${config.symbol}${converted.toFixed(2)}`
 }
 
-// Detect country from IP using a simple approach
-// In production, you'd use a proper IP geolocation service
+// Detect country from IP using multiple fallback services
 export async function detectCountryFromIP(): Promise<string> {
-  try {
-    // Try to get country from IP using a free geolocation API
-    const response = await fetch('https://ipapi.co/json/')
-    if (response.ok) {
-      const data = await response.json()
-      return data.country_code || 'US'
+  const services = [
+    'https://ipapi.co/json/',
+    'https://ip-api.com/json/',
+    'https://freeipapi.com/api/json/'
+  ]
+
+  for (const url of services) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(3000) })
+      if (response.ok) {
+        const data = await response.json()
+        const code = data.country_code || data.countryCode || data.country
+        if (code && typeof code === 'string') {
+          return code.toUpperCase()
+        }
+      }
+    } catch (error) {
+      console.log(`Geolocation service ${url} failed:`, error)
     }
-  } catch (error) {
-    console.log('Could not detect country from IP:', error)
   }
   
-  // Default to US if detection fails
-  return 'US'
+  // Default to PH since the site seems targeting Philippines
+  return 'PH'
 }
+
 
 // Store currency in localStorage for quick access
 export function setUserCurrency(currency: string): void {

@@ -23,6 +23,7 @@ import {
   Loader2,
   UserPlus,
   Mail,
+  Tag,
   Phone,
   Calendar,
   CreditCard,
@@ -74,6 +75,7 @@ export default function AdminUsers() {
         .from('users')
         .select('*')
         .order('client_id', { ascending: false })
+        .limit(10000)
 
       if (data) {
         setUsers(data)
@@ -181,6 +183,7 @@ export default function AdminUsers() {
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Services", href: "/admin/services", icon: Wrench },
+    { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "Tickets", href: "/admin/tickets", icon: MessageSquare },
     { name: "Add Funds", href: "/admin/add-funds", icon: DollarSign },
     { name: "Settings", href: "/admin/settings", icon: Settings },

@@ -28,6 +28,7 @@ interface Ticket {
   priority: string
   created_at: string
   updated_at: string
+  replies?: any[]
 }
 
 const statusConfig: Record<string, { color: string; bg: string; label: string; icon: any }> = {
@@ -94,16 +95,39 @@ export default function Tickets() {
   const fetchTickets = async (clientId: number) => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
+      // Fetch tickets
+      const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
         .select('*')
+        .limit(10000)
         .eq('client_id', clientId)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (ticketsError) throw ticketsError
       
-      if (data) {
-        setTickets(data)
+      // Fetch replies from ticket_reply table
+      let repliesData = null
+      try {
+        const { data: replies } = await supabase
+          .from('ticket_reply')
+          .select('*')
+          .eq('client_id', clientId)
+          .order('time', { ascending: false })
+        repliesData = replies
+      } catch (e) {
+        console.log('ticket_reply table not available')
+      }
+      
+      if (ticketsData) {
+        // Merge replies into tickets
+        const ticketsWithReplies = ticketsData.map(ticket => {
+          const ticketReplies = repliesData?.filter(r => r.ticket_id === ticket.id) || []
+          return {
+            ...ticket,
+            replies: ticketReplies
+          }
+        })
+        setTickets(ticketsWithReplies)
       }
     } catch (error) {
       console.error('Error fetching tickets:', error)
@@ -362,6 +386,23 @@ export default function Tickets() {
                             <p className="font-mono text-[10px] text-slate-500 uppercase mb-2">Message</p>
                             <p className="font-mono text-sm text-slate-700">{ticket.message}</p>
                           </div>
+
+                          {/* Admin Replies */}
+                          {ticket.replies && ticket.replies.length > 0 && (
+                            <div className="mb-4 space-y-2">
+                              {ticket.replies.map((reply: any) => (
+                                <div key={reply.id} className="bg-rose-50 rounded-xl p-4 border border-rose-100">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <p className="font-mono text-[10px] text-rose-600 uppercase font-semibold">Admin Reply</p>
+                                    <span className="font-mono text-[10px] text-slate-400">
+                                      {new Date(reply.time).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="font-mono text-sm text-slate-700">{reply.message}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {ticket.status !== 'solved' && ticket.status !== 'closed' && (
                             <button className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-mono text-sm font-semibold transition-colors">

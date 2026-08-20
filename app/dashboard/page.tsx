@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { useUser } from "@/hooks/use-user"
 import BrutalistSidebar from "@/components/brutalist-sidebar"
 import { useCurrency } from "@/hooks/useCurrency"
 import { 
@@ -14,32 +15,29 @@ import {
   ArrowRight,
   Activity,
   Clock,
-  CheckCircle2
 } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null)
+  const { user, loading } = useUser()
   const router = useRouter()
   const { formatPrice } = useCurrency()
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    } else {
+    if (!loading && !user) {
       router.push('/signin')
     }
-  }, [router])
+  }, [user, loading, router])
 
-  if (!user) {
+  if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/30 to-rose-50/50">

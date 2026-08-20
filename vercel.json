@@ -1,13 +1,9 @@
 {
-  "framework": "nextjs",
-  "routes": [
+  "crons": [
     {
-      "src": "/api/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization"
-      }
+      "path": "/api/cron/sync-services",
+      "schedule": "0 0 * * *"
     }
+
   ]
 }

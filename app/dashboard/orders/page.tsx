@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
@@ -89,8 +89,11 @@ export default function Orders() {
   const [sortBy, setSortBy] = useState<string>("newest")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshingOrderIds, setRefreshingOrderIds] = useState<Set<number>>(new Set())
   const router = useRouter()
   const { currency, config, formatPrice } = useCurrency()
+  const pollingRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -110,6 +113,7 @@ export default function Orders() {
       const { data: ordersData } = await supabase
         .from('orders')
         .select('*')
+        .limit(10000)
         .eq('client_id', clientId)
         .order('order_id', { ascending: false })
 
@@ -132,6 +136,83 @@ export default function Orders() {
       setIsLoading(false)
     }
   }
+
+  // Refresh order status from SMM API
+  const refreshOrderStatus = async (order: Order) => {
+    if (refreshingOrderIds.has(order.order_id)) return
+    setRefreshingOrderIds(prev => new Set(prev).add(order.order_id))
+
+    try {
+      const response = await fetch('/api/smm-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.order_id })
+      })
+      const data = await response.json()
+
+      if (data.order && data.order.length > 0) {
+        const liveStatus = data.order[0].status
+        const liveStart = parseInt(data.order[0].start_count) || order.order_start
+        const liveRemains = parseInt(data.order[0].remains) || order.order_remains
+        const liveFinish = parseInt(data.order[0].finish_count) || order.order_finish
+
+        if (liveStatus !== order.order_status) {
+          await supabase
+            .from('orders')
+            .update({
+              order_status: liveStatus,
+              order_start: liveStart,
+              order_remains: liveRemains,
+              order_finish: liveFinish,
+              last_check: new Date().toISOString()
+            })
+            .eq('order_id', order.order_id)
+
+          setOrders(prev =>
+            prev.map(o =>
+              o.order_id === order.order_id
+                ? { ...o, order_status: liveStatus, order_start: liveStart, order_remains: liveRemains, order_finish: liveFinish }
+                : o
+            )
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing order status:', error)
+    } finally {
+      setRefreshingOrderIds(prev => {
+        const next = new Set(prev)
+        next.delete(order.order_id)
+        return next
+      })
+    }
+  }
+
+  // Auto-poll in-progress orders every 30 seconds
+  useEffect(() => {
+    const inProgressOrders = orders.filter(o =>
+      o.order_status === 'pending' || o.order_status === 'processing' || o.order_status === 'inprogress'
+    )
+
+    if (inProgressOrders.length === 0) {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+      return
+    }
+
+    pollingRef.current = setInterval(() => {
+      inProgressOrders.forEach(order => refreshOrderStatus(order))
+    }, 30000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+        pollingRef.current = null
+      }
+    }
+  }, [orders])
 
   useEffect(() => {
     let result = [...orders]
@@ -387,12 +468,22 @@ export default function Orders() {
                           <span className="font-mono text-xs text-slate-500">{formatDate(order.order_create)}</span>
                         </td>
                         <td className="p-4">
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="p-2 hover:bg-rose-100 rounded-lg transition-colors"
-                          >
-                            <Eye size={16} className="text-slate-500" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => refreshOrderStatus(order)}
+                              disabled={refreshingOrderIds.has(order.order_id)}
+                              className="p-2 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
+                              title="Refresh status"
+                            >
+                              <RefreshCw size={16} className={`text-slate-500 ${refreshingOrderIds.has(order.order_id) ? 'animate-spin' : ''}`} />
+                            </button>
+                            <button
+                              onClick={() => setSelectedOrder(order)}
+                              className="p-2 hover:bg-rose-100 rounded-lg transition-colors"
+                            >
+                              <Eye size={16} className="text-slate-500" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )

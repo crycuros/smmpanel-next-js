@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(kill %1)",
+      "Bash(cmd *)",
+      "Bash(tasklist)",
+      "Bash(findstr 1208)",
+      "Bash(kill *)",
+      "Bash(taskkill *)",
+      "Bash(wmic process *)",
+      "Bash(tasklist /v)"
+    ]
+  }
+}

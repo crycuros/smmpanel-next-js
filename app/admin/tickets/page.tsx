@@ -19,7 +19,8 @@ import {
   X,
   Check,
   Eye,
-  Send
+  Send,
+  Tag
 } from "lucide-react"
 
 export default function AdminTickets() {
@@ -53,11 +54,12 @@ export default function AdminTickets() {
   const fetchTickets = async () => {
     setIsLoading(true)
     try {
-      // Get tickets without join first - use 'id' not 'ticket_id'
+      // Get tickets - try ticket_id first, then id
       const { data: ticketsData, error: ticketsError } = await supabase
         .from('tickets')
         .select('*')
         .order('id', { ascending: false })
+        .limit(10000)
 
       console.log('Tickets query result:', { ticketsData, ticketsError })
       
@@ -68,6 +70,24 @@ export default function AdminTickets() {
       console.log('Setting tickets, count:', ticketsData?.length || 0)
       
       if (ticketsData && ticketsData.length > 0) {
+        // Get unique ticket_ids for fetching replies
+        const ticketIds = ticketsData.map(t => t.id || t.ticket_id)
+        
+        // Fetch replies for these tickets
+        let repliesData = null
+        try {
+          const result = await supabase
+            .from('ticket_reply')
+            .select('*')
+            .in('ticket_id', ticketIds)
+            .eq('support', '2') // Only admin replies
+            .order('time', { ascending: false })
+          repliesData = result.data
+        } catch (e) {
+          // ticket_reply table might not exist yet
+          console.log('ticket_reply table not available')
+        }
+        
         // Get unique client_ids
         const clientIds = [...new Set(ticketsData.map(t => t.client_id))]
         
@@ -77,11 +97,17 @@ export default function AdminTickets() {
           .select('client_id, username, email')
           .in('client_id', clientIds)
         
-        // Merge user data
-        const ticketsWithUsers = ticketsData.map(ticket => ({
-          ...ticket,
-          users: usersData?.find(u => u.client_id === ticket.client_id)
-        }))
+        // Merge user data and replies
+        const ticketsWithUsers = ticketsData.map(ticket => {
+          const ticketId = ticket.id || ticket.ticket_id
+          const ticketReplies = repliesData?.filter(r => r.ticket_id === ticketId) || []
+          return {
+            ...ticket,
+            ticket_id: ticketId,
+            users: usersData?.find(u => u.client_id === ticket.client_id),
+            replies: ticketReplies
+          }
+        })
         
         setTickets(ticketsWithUsers)
       } else {
@@ -103,15 +129,39 @@ export default function AdminTickets() {
     if (!selectedTicket || !replyText.trim()) return
     
     try {
-      const { error } = await supabase
+      // Get the ticket_id - use the field we added
+      const ticketId = selectedTicket.ticket_id
+      const clientId = selectedTicket.client_id
+      
+      // Try to insert the reply into ticket_reply table (may not exist yet)
+      try {
+        const { error: replyError } = await supabase
+          .from('ticket_reply')
+          .insert([{
+            ticket_id: ticketId,
+            client_id: clientId,
+            time: new Date().toISOString(),
+            support: '2', // 2 = from support/admin
+            message: replyText,
+            readed: '1'
+          }])
+
+        if (replyError) {
+          console.log('Could not insert to ticket_reply:', replyError)
+        }
+      } catch (e) {
+        console.log('ticket_reply table not available')
+      }
+
+      // Update the ticket status to 'answered'
+      const { error: updateError } = await supabase
         .from('tickets')
         .update({ 
-          reply: replyText,
-          status: 'closed'
+          status: 'answered'
         })
-        .eq('id', selectedTicket.id)
+        .eq('id', ticketId)
 
-      if (error) throw error
+      if (updateError) throw updateError
 
       setSelectedTicket(null)
       setReplyText("")
@@ -126,7 +176,9 @@ export default function AdminTickets() {
     try {
       const { error } = await supabase
         .from('tickets')
-        .update({ status: 'closed' })
+        .update({ 
+          status: 'closed'
+        })
         .eq('id', ticketId)
 
       if (error) throw error
@@ -142,6 +194,7 @@ export default function AdminTickets() {
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Services", href: "/admin/services", icon: Wrench },
+    { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "Tickets", href: "/admin/tickets", icon: MessageSquare },
     { name: "Add Funds", href: "/admin/add-funds", icon: DollarSign },
     { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -271,19 +324,27 @@ export default function AdminTickets() {
                     <h3 className="font-mono text-sm text-white mb-1">{ticket.subject}</h3>
                     <p className="font-mono text-xs text-slate-400 mb-2">From: {ticket.users?.username || ticket.users?.email || 'Unknown'}</p>
                     <p className="font-mono text-xs text-slate-500 line-clamp-2">{ticket.message}</p>
-                    {ticket.reply && (
-                      <div className="mt-3 p-3 bg-slate-700/50 rounded-xl">
-                        <p className="font-mono text-xs text-rose-500 mb-1">Admin Reply:</p>
-                        <p className="font-mono text-xs text-slate-300">{ticket.reply}</p>
+                    {ticket.replies && ticket.replies.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {ticket.replies.slice(0, 1).map((reply: any) => (
+                          <div key={reply.id} className="p-3 bg-slate-700/50 rounded-xl">
+                            <p className="font-mono text-xs text-rose-500 mb-1">Admin Reply:</p>
+                            <p className="font-mono text-xs text-slate-300">{reply.message}</p>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
-                    <button onClick={() => { setSelectedTicket(ticket); setReplyText(ticket.reply || ""); }} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
+                    <button onClick={() => { 
+                      const latestReply = ticket.replies && ticket.replies.length > 0 ? ticket.replies[0].message : ''
+                      setSelectedTicket(ticket); 
+                      setReplyText(latestReply); 
+                    }} className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors">
                       <Eye size={14} className="text-blue-400" />
                     </button>
-                    {ticket.status === 'open' && (
-                      <button onClick={() => handleCloseTicket(ticket.id)} className="p-2 bg-slate-700 hover:bg-green-500/20 rounded-lg transition-colors">
+                    {ticket.status !== 'closed' && (
+                      <button onClick={() => handleCloseTicket(ticket.ticket_id)} className="p-2 bg-slate-700 hover:bg-green-500/20 rounded-lg transition-colors">
                         <Check size={14} className="text-green-400" />
                       </button>
                     )}

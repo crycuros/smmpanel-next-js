@@ -6,18 +6,15 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
 import { useCurrency } from "@/hooks/useCurrency"
+import AdminLayout from "@/components/admin-layout"
 import { 
   Users,
   ShoppingCart,
   Wrench,
   MessageSquare,
   DollarSign,
-  BarChart3,
-  Settings,
-  LogOut,
   TrendingUp,
   TrendingDown,
-  Menu,
   Activity,
   Clock,
   CheckCircle,
@@ -27,7 +24,8 @@ import {
   Zap,
   Globe,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Tag
 } from "lucide-react"
 
 export default function AdminDashboard() {
@@ -143,7 +141,7 @@ export default function AdminDashboard() {
       // Fetch recent orders
       const { data: recentOrdersData } = await supabase
         .from('orders')
-        .select('*, users(username)')
+        .select('*')
         .order('order_id', { ascending: false })
         .limit(10)
 
@@ -168,20 +166,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin')
-    router.push('/admin')
-  }
-
-  const navItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: BarChart3 },
-    { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
-    { name: "Services", href: "/admin/services", icon: Wrench },
-    { name: "Tickets", href: "/admin/tickets", icon: MessageSquare },
-    { name: "Add Funds", href: "/admin/add-funds", icon: DollarSign },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
-  ]
+  // AdminLayout handles navigation and logout
 
   if (!user) {
     return (
@@ -192,73 +177,12 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-800 border-b border-slate-700 p-4 flex items-center justify-between">
-        <h1 className="font-mono text-lg font-bold text-white">MND Admin</h1>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 bg-slate-700 rounded-lg"
-        >
-          <Menu size={20} className="text-white" />
-        </button>
-      </div>
-
-      {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 z-40 transform transition-transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="font-mono text-xl font-bold text-white">MND</h1>
-          <p className="font-mono text-xs text-slate-400">MND Admin</p>
-        </div>
-
-        <nav className="p-4 space-y-2">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-              >
-                <Icon size={18} />
-                <span className="font-mono text-sm">{item.name}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors w-full"
-          >
-            <LogOut size={18} />
-            <span className="font-mono text-sm">Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content */}
-      <main className="lg:ml-64 p-6 pt-20 lg:pt-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-sans text-3xl font-bold text-white mb-2">Analytics</h1>
-            <p className="font-mono text-sm text-slate-400">Welcome back, Admin</p>
-          </div>
-          <div className="hidden lg:block text-right">
-            <p className="font-mono text-xs text-slate-400">{new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
+    <AdminLayout
+      currentPath="/admin/dashboard"
+      title="Analytics"
+      description="Welcome back, Admin"
+    >
+        {/* Header - additional content can go here */}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -542,7 +466,6 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
         </div>
-      </main>
-    </div>
+    </AdminLayout>
   )
 }

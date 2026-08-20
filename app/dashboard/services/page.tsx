@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabase"
@@ -16,7 +16,9 @@ import {
   Linkedin,
   Sparkles,
   ChevronDown,
-  Info
+  Info,
+  RefreshCw,
+  ArrowDown
 } from "lucide-react"
 
 interface Category {
@@ -63,8 +65,17 @@ export default function Services() {
   const [selectedCategory, setSelectedCategory] = useState<number | "all">("all")
   const [expandedService, setExpandedService] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<string>("")
+  const [syncProgress, setSyncProgress] = useState({ current: 0, total: 0 })
   const router = useRouter()
   const { currency, config, isLoading: currencyLoading, convertPrice, formatPrice } = useCurrency()
+  
+  // Pull-to-refresh state
+  const [isPulling, setIsPulling] = useState(false)
+  const [pullDistance, setPullDistance] = useState(0)
+  const touchStartY = useRef(0)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -77,33 +88,192 @@ export default function Services() {
     }
   }, [router])
 
+  const handleRefresh = async () => {
+    setIsSyncing(true)
+    setSyncProgress({ current: 0, total: 0 })
+    setSyncMessage("Updating Services 0/...")
+    try {
+      // Use smart sync to only update changed services
+      const apiKey = process.env.NEXT_PUBLIC_SMM_API_KEY
+      const apiUrl = process.env.NEXT_PUBLIC_SMM_API_URL
+      
+      if (apiKey && apiUrl) {
+        setSyncMessage("Fetching services...")
+        const response = await fetch('/api/smart-sync-services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey, apiUrl })
+        })
+        const data = await response.json()
+        
+        if (data.success) {
+          const total = data.stats?.updatedCount + data.stats?.insertedCount || 0
+          setSyncProgress({ current: total, total })
+          setSyncMessage(`Updating Services ${total}/${total}`)
+          setSyncMessage(data.message || "Services updated!")
+        } else {
+          setSyncMessage(data.error || "Sync failed")
+        }
+      }
+    } catch (err) {
+      console.error('Smart sync error:', err)
+      setSyncMessage("Sync failed")
+    }
+    
+    await fetchData()
+    setIsSyncing(false)
+    setSyncProgress({ current: 0, total: 0 })
+    setTimeout(() => setSyncMessage(""), 3000)
+  }
+
+  // Pull-to-refresh handlers - more sensitive for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Enable pull-to-refresh when near the top of the page
+    if (window.scrollY <= 10) {
+      touchStartY.current = e.touches[0].clientY
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === 0) return
+    
+    const currentY = e.touches[0].clientY
+    const diff = currentY - touchStartY.current
+    
+    // Only allow pulling down (not up) and when near top
+    if (diff > 0 && window.scrollY <= 10) {
+      // Cap the pull distance at 80px
+      setPullDistance(Math.min(diff * 0.6, 80))
+      setIsPulling(true)
+    }
+  }
+
+  const handleTouchEnd = async () => {
+    if (isPulling && pullDistance > 30) {
+      // Trigger refresh if pulled down more than 30px
+      await handleRefresh()
+    }
+    
+    // Reset state
+    setIsPulling(false)
+    setPullDistance(0)
+    touchStartY.current = 0
+  }
+
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch categories
-      const { data: categoriesData } = await supabase
+      // First try to fetch from Supabase
+      const { data: categoriesData, error: catError } = await supabase
         .from('categories')
         .select('*')
         .order('category_line', { ascending: true })
       
-      if (categoriesData) {
+      console.log('Categories response:', { data: categoriesData, error: catError })
+      
+      if (categoriesData && categoriesData.length > 0) {
         setCategories(categoriesData)
       }
 
-      // Fetch services
-      const { data: servicesData } = await supabase
-        .from('services')
-        .select('*')
-        .order('service_line', { ascending: true })
+      // Fetch services with pagination to get all 1754+ services
+      const pageSize = 1000
+      let allServices: any[] = []
+      let from = 0
+      let hasMore = true
       
-      if (servicesData) {
+      while (hasMore) {
+        const { data: servicesPage, error: svcError } = await supabase
+          .from('services')
+          .select('*')
+          .order('service_line', { ascending: true })
+          .range(from, from + pageSize - 1)
+        
+        if (servicesPage && servicesPage.length > 0) {
+          allServices = [...allServices, ...servicesPage]
+          from += pageSize
+          hasMore = servicesPage.length === pageSize
+        } else {
+          hasMore = false
+        }
+      }
+      
+      const servicesData = allServices
+      console.log('Services response:', { count: servicesData?.length })
+      
+      // If Supabase has data, use it
+      if (servicesData && servicesData.length > 0) {
         setServices(servicesData)
         setFilteredServices(servicesData)
+        // Also refresh categories from external if needed
+        if (!categoriesData || categoriesData.length === 0) {
+          await fetchFromExternalAPI()
+        }
+      } else {
+        // Fallback: Fetch from external SMM API
+        console.log('Supabase empty, fetching from external API...')
+        await fetchFromExternalAPI()
       }
     } catch (error) {
       console.error('Error fetching services:', error)
+      // Try external API as fallback
+      await fetchFromExternalAPI()
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchFromExternalAPI = async () => {
+    try {
+      const apiKey = process.env.NEXT_PUBLIC_SMM_API_KEY
+      const apiUrl = process.env.NEXT_PUBLIC_SMM_API_URL
+      
+      if (!apiKey || !apiUrl) {
+        console.error('API not configured')
+        return
+      }
+      
+      console.log('Fetching from server-side API...')
+      
+      // Use server-side API to bypass CORS
+      const response = await fetch('/api/sync-services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey, apiUrl })
+      })
+      const data = await response.json()
+      
+      console.log('Server API response:', data)
+      
+      if (data.error) {
+        console.error('API error:', data.error)
+        return
+      }
+      
+      if (data.categories && Array.isArray(data.categories)) {
+        setCategories(data.categories)
+      }
+      
+      if (data.services && Array.isArray(data.services)) {
+        const transformedServices: Service[] = data.services.map((item: any) => ({
+          service_id: item.service_id,
+          service_name: item.service_name,
+          category_id: item.category_id,
+          service_price: item.service_price,
+          service_min: item.service_min,
+          service_max: item.service_max,
+          service_line: item.service_line,
+          service_description: item.service_description || '',
+          time: 'N/A',
+          average_time: 0,
+          service_refill: item.service_refill
+        }))
+        
+        setServices(transformedServices)
+        setFilteredServices(transformedServices)
+        console.log('Loaded', transformedServices.length, 'services from API')
+      }
+    } catch (error) {
+      console.error('Error fetching from external API:', error)
     }
   }
 
@@ -148,20 +318,69 @@ export default function Services() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-pink-50/30 to-rose-50/50">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-white via-pink-50/30 to-rose-50/50"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      ref={contentRef}
+    >
       <BrutalistSidebar />
       
-      <div className="p-6 md:p-8 pt-20 pb-24 md:pb-8">
+      {/* Pull-to-refresh indicator */}
+      <div 
+        className="fixed top-0 left-0 right-0 z-40 transition-transform duration-200"
+        style={{ 
+          transform: isPulling || isSyncing ? 'translateY(0)' : 'translateY(-60px)',
+          paddingTop: '60px'
+        }}
+      >
+        <div className="bg-rose-500 text-white text-center py-2 font-mono text-sm flex items-center justify-center gap-2">
+          {isSyncing ? (
+            <>
+              <RefreshCw size={16} className="animate-spin" />
+              {syncMessage || 'Updating Services...'}
+            </>
+          ) : (
+            <>
+              <ArrowDown size={16} />
+              Pull down to sync
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Sync message toast */}
+      {syncMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white px-4 py-2 rounded-xl font-mono text-sm shadow-lg">
+          {syncMessage}
+        </div>
+      )}
+      
+      <div className="p-4 md:p-8 pt-16 md:pt-20 pb-20 md:pb-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="font-sans text-3xl md:text-4xl font-light text-slate-900 mb-2">
+          <h1 className="font-sans text-2xl md:text-4xl font-light text-slate-900 mb-2">
             Our <span className="italic text-rose-500 font-semibold">Services</span>
           </h1>
-          <p className="font-mono text-sm text-slate-500">Browse all available services and rates</p>
+          <p className="font-mono text-xs md:text-sm text-slate-500">Browse all available services and rates</p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
+            <button
+              onClick={handleRefresh}
+              disabled={isSyncing}
+              className="px-3 py-2 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white rounded-xl font-mono text-xs md:text-sm transition-colors flex items-center gap-2 w-full sm:w-auto"
+            >
+              <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+              {isSyncing ? 'Syncing...' : 'Refresh'}
+            </button>
+            <span className="font-mono text-xs text-slate-400">
+              Swipe down to sync
+            </span>
+          </div>
         </motion.div>
 
         {/* Filters */}
@@ -173,13 +392,13 @@ export default function Services() {
         >
           {/* Search */}
           <div className="relative mb-4">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by ID or service name..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+              className="w-full pl-10 pr-4 py-2 md:py-3 bg-white border border-rose-100 rounded-xl font-mono text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
             />
           </div>
 

@@ -5,7 +5,11 @@ import { Analytics } from "@vercel/analytics/next"
 import { ToastProvider } from "@/components/toast-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { CustomCursor } from "@/components/custom-cursor"
+import { EmojiParser } from "@/components/emoji-parser"
+import { Security } from "@/components/security"
+import { ChatBot } from "@/components/chatbot"
 import "./globals.css"
+import Script from "next/script"
 
 // PP Neue Montreal alternative: Poppins (modern, geometric sans-serif)
 const poppinsFont = Poppins({
@@ -51,6 +55,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${poppinsFont.variable} ${loraFont.variable} ${ibmPlexMono.variable} relative`}>
       <body className="font-sans antialiased overflow-x-hidden">
+        <Security />
+        <EmojiParser />
         <CustomCursor />
         <ThemeProvider
           attribute="class"
@@ -61,6 +67,7 @@ export default function RootLayout({
           <ToastProvider>
             <div className="noise-overlay" />
             {children}
+            <ChatBot />
             <Analytics />
           </ToastProvider>
         </ThemeProvider>

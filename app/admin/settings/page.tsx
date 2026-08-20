@@ -39,13 +39,22 @@ const DEFAULT_PROVIDERS = [
     id: "weboostph",
     name: "WeBoostPH",
     url: "https://weboostph.biz/api/v2",
-    key: ""
+    key: "",
+    currency: "PHP"
+  },
+  {
+    id: "smmworld",
+    name: "SMM World",
+    url: "https://smmworld.org/api/v2",
+    key: "",
+    currency: "USD"
   },
   {
     id: "generic",
     name: "Generic API",
     url: "https://example.com/api",
-    key: ""
+    key: "",
+    currency: "PHP"
   }
 ]
 
@@ -54,6 +63,7 @@ interface Provider {
   name: string
   url: string
   key: string
+  currency?: string
 }
 
 interface ProviderCategory {
@@ -373,8 +383,10 @@ export default function AdminSettings() {
       
       const data = await response.json()
       
+      console.log('API Response:', data)
+      
       if (!Array.isArray(data)) {
-        throw new Error(data.error || 'Invalid response from API')
+        throw new Error(data.error || data.message || 'Invalid response from API: ' + JSON.stringify(data))
       }
       
       // Group services by category
@@ -620,9 +632,12 @@ export default function AdminSettings() {
         for (const svc of category.services) {
           if (!selectedSvs.has(svc.service)) continue
           
-          // Calculate price with profit
+          // Calculate price with profit - convert USD to PHP first if needed
           const basePrice = parseFloat(svc.rate) || 0
-          const sellingPrice = basePrice + (basePrice * profit / 100)
+          // Convert USD to PHP (1 USD = 56 PHP) for SMMWORLD, then add profit
+          const providerCurrency = (prov as any).currency || 'PHP'
+          const phpPrice = providerCurrency === 'USD' ? basePrice * 56 : basePrice
+          const sellingPrice = phpPrice + (phpPrice * profit / 100)
 
           // Check if service already exists (by name and category)
           // Use ilike for case-insensitive match to handle special characters better
@@ -642,7 +657,8 @@ export default function AdminSettings() {
                 service_profit: profit.toString(),
                 service_min: parseInt(svc.min) || 1,
                 service_max: parseInt(svc.max) || 100000,
-                service_description: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`
+                service_description: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`,
+                api_provider: provider.id
               })
               .eq('service_id', existingService.service_id)
             
@@ -662,7 +678,8 @@ export default function AdminSettings() {
                 service_min: parseInt(svc.min) || 1,
                 service_max: parseInt(svc.max) || 100000,
                 service_description: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`,
-                service_type: 'default'
+                service_type: 'default',
+                api_provider: provider.id
               }])
             
             if (insertError) {
@@ -1070,7 +1087,7 @@ export default function AdminSettings() {
                                     <p className="font-mono text-xs text-white truncate">{service.name}</p>
                                   </div>
                                   <div className="flex items-center gap-2 text-xs">
-                                    <span className="text-slate-400">{config.symbol}{service.rate}</span>
+                                    <span className="text-slate-400">{selectedProvider === 'smmworld' ? '$' : '₱'}{service.rate}</span>
                                     <span className="text-slate-500">({service.min}-{service.max})</span>
                                   </div>
                                 </div>

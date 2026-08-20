@@ -115,9 +115,6 @@ export default function AdminLogin() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-rose-500 to-rose-600 rounded-2xl shadow-lg shadow-rose-500/30 mb-4">
-            <Shield size={32} className="text-white" />
-          </div>
           <h1 className="font-sans text-3xl font-bold text-white mb-2">MND</h1>
           <p className="font-mono text-sm text-slate-400">Admin Panel</p>
         </div>

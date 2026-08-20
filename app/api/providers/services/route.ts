@@ -6,6 +6,10 @@ const PROVIDER_APIS: Record<string, { baseUrl: string; keyParam: string }> = {
     baseUrl: 'https://weboostph.biz/api/v2',
     keyParam: 'key'
   },
+  smmworld: {
+    baseUrl: 'https://smmworld.org/api/v2',
+    keyParam: 'key'
+  },
   // Add more providers here as needed
 };
 
@@ -61,6 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     const responseData = await response.json();
+    console.log('Provider API Response:', provider, responseData);
     return NextResponse.json(responseData);
 
   } catch (error) {

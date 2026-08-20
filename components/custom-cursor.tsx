@@ -9,45 +9,50 @@ interface DeviceInfo {
   viewportWidth: number
   devicePixelRatio: number
   isDetected: boolean
+  isLowPower: boolean
 }
 
 function getDeviceInfo(): DeviceInfo {
   if (typeof window === 'undefined') {
-    // Server-side - assume mobile until proven otherwise
     return {
-      isMobile: true,
-      isTouch: true,
-      viewportWidth: 0,
+      isMobile: false,
+      isTouch: false,
+      viewportWidth: 1024,
       devicePixelRatio: 1,
-      isDetected: false
+      isDetected: false,
+      isLowPower: false
     }
   }
 
   const viewportWidth = window.innerWidth
   const devicePixelRatio = window.devicePixelRatio || 1
   
-  // Check for touch device
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0
-  
-  // Check for mobile based on viewport width and touch capability
   const isMobile = viewportWidth < 768 || isTouch
+  
+  // Only consider low-power if very low cores AND mobile/touch
+  const cores = navigator.hardwareConcurrency || 8
+  const isLowPower = cores <= 2 && (isTouch || isMobile)
 
   return {
     isMobile,
     isTouch,
     viewportWidth,
     devicePixelRatio,
-    isDetected: true
+    isDetected: true,
+    isLowPower
   }
 }
+
+
 
 export function CustomCursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo>(getDeviceInfo())
+  const [mounted, setMounted] = useState(false)
 
-  // Update device info on resize
   useEffect(() => {
     const updateDeviceInfo = () => {
       setDeviceInfo(getDeviceInfo())
@@ -56,11 +61,12 @@ export function CustomCursor() {
     window.addEventListener('resize', updateDeviceInfo)
     window.addEventListener('orientationchange', updateDeviceInfo)
     
-    // Also listen for device change events
     if (navigator.maxTouchPoints > 0) {
-      // This helps detect when a device switches between touch and mouse
       window.matchMedia('(pointer: coarse)').addEventListener('change', updateDeviceInfo)
     }
+
+    // Mark as mounted to avoid hydration mismatch
+    setMounted(true)
 
     return () => {
       window.removeEventListener('resize', updateDeviceInfo)
@@ -68,14 +74,11 @@ export function CustomCursor() {
     }
   }, [])
 
-  // Don't show custom cursor on mobile/touch devices or before detection
-  // We need isDetected to be true AND not be a mobile/touch device
-  const shouldShowCursor = deviceInfo.isDetected && !deviceInfo.isMobile && !deviceInfo.isTouch
+  // Only check device constraints - always track mouse for smooth transition
+  const canShowCursor = !deviceInfo.isMobile && !deviceInfo.isTouch && !deviceInfo.isLowPower
 
+  // Track mouse movement regardless, just hide/show based on device
   useEffect(() => {
-    // Don't add event listeners if we shouldn't show cursor
-    if (!shouldShowCursor) return
-
     const handleMouseMove = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY })
       setIsVisible(true)
@@ -86,14 +89,16 @@ export function CustomCursor() {
 
     const handleHoverStart = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest("a, button, [data-cursor-hover]")) {
+      const linkElement = target.closest("a[href]")
+      if (linkElement) {
         setIsHovering(true)
       }
     }
 
     const handleHoverEnd = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      if (target.closest("a, button, [data-cursor-hover]")) {
+      const linkElement = target.closest("a[href]")
+      if (linkElement) {
         setIsHovering(false)
       }
     }
@@ -111,38 +116,38 @@ export function CustomCursor() {
       document.removeEventListener("mouseover", handleHoverStart)
       document.removeEventListener("mouseout", handleHoverEnd)
     }
-  }, [shouldShowCursor])
+  }, [])
 
-  // Don't render anything on mobile/touch devices or before detection
-  // This ensures the cursor doesn't appear during SSR or on mobile
+  // Don't render anything before mounted to avoid hydration mismatch
+  // Also check device constraints
+  const shouldShowCursor = mounted && canShowCursor
+  
   if (!shouldShowCursor) {
     return null
   }
 
+  // Determine which cursor image to show
+  const showHoverCursor = isVisible && isHovering
+  const showNormalCursor = isVisible && !isHovering
+
   return (
     <>
-      {/* Main cursor dot */}
+      {/* Custom Cursor Image */}
       <motion.div
-        className="fixed top-0 left-0 w-3 h-3 bg-white rounded-full pointer-events-none z-[10000] mix-blend-difference"
+        className="fixed top-0 left-0 pointer-events-none z-[999999]"
         animate={{
-          x: position.x - 6,
-          y: position.y - 6,
-          scale: isHovering ? 0 : 5,
+          x: position.x,
+          y: position.y,
           opacity: isVisible ? 1 : 0,
         }}
         transition={{ type: "spring", stiffness: 500, damping: 28, mass: 0.5 }}
-      />
-      {/* Hover ring */}
-      <motion.div
-        className="fixed top-0 left-0 w-12 h-12 border border-white rounded-full pointer-events-none z-[10000] mix-blend-difference"
-        animate={{
-          x: position.x - 24,
-          y: position.y - 24,
-          scale: isHovering ? 1 : 0,
-          opacity: isVisible ? 1 : 0,
-        }}
-        transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.8 }}
-      />
+      >
+        <img 
+          src={isHovering ? "/cursor_hover.png" : "/cursor_normal.png"}
+          alt="cursor" 
+          className="w-8 h-8"
+        />
+      </motion.div>
     </>
   )
 }

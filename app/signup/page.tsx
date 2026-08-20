@@ -36,11 +36,33 @@ export default function SignUp() {
     e.preventDefault()
     setIsLoading(true)
     
-    // Simulate API call
-    setTimeout(() => {
-      addToast("Account created successfully! Welcome to MND!", "success", 2000)
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        addToast('Account created successfully! Welcome to MND!', 'success', 2000)
+        // Store user in localStorage
+        localStorage.setItem('user', JSON.stringify(data.user))
+        // Redirect to dashboard
+        setTimeout(() => router.push('/dashboard'), 1500)
+      } else {
+        addToast(data.error || 'Registration failed', 'error', 3000)
+      }
+    } catch (error) {
+      addToast('Registration failed', 'error', 3000)
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const passwordMatch = formData.password === formData.confirmPassword && formData.password !== ""

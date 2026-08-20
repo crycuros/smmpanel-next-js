@@ -24,6 +24,15 @@ export function Navbar() {
   const { isMobile, metrics } = useIsMobile()
   const { shouldShowSidebar, deviceMetrics } = useSidebarBreakpoint()
 
+  // Auto-toggle between MND and MARKET every 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsMNDMode(prev => !prev)
+    }, 120000) // 2 minutes = 120000ms
+    
+    return () => clearInterval(interval)
+  }, [])
+
   useEffect(() => {
     // Check for logged in user
     const storedUser = localStorage.getItem('user')
@@ -97,9 +106,17 @@ export function Navbar() {
                   <motion.span
                     key="mnd"
                     initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
-                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                    animate={{ 
+                      opacity: 1, 
+                      rotate: 0, 
+                      scale: [1, 1.1, 1],
+                    }}
                     exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    transition={{ 
+                      duration: 0.4, 
+                      scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+                      ease: [0.25, 0.46, 0.45, 0.94] 
+                    }}
                     className="font-mono text-xs tracking-widest font-bold text-rose-600"
                   >
                     MND
@@ -108,25 +125,23 @@ export function Navbar() {
                   <motion.span
                     key="market"
                     initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
-                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                    animate={{ 
+                      opacity: 1, 
+                      rotate: 0, 
+                      scale: [1, 1.1, 1],
+                    }}
                     exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
-                    transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    transition={{ 
+                      duration: 0.4, 
+                      scale: { duration: 1.5, repeat: Infinity, ease: "easeInOut" },
+                      ease: [0.25, 0.46, 0.45, 0.94] 
+                    }}
                     className="font-mono text-xs tracking-widest font-bold text-rose-600"
                   >
-                    MARKET
+                    MarketNextDoor
                   </motion.span>
                 )}
               </AnimatePresence>
-              <motion.span 
-                className="hidden sm:inline text-[10px] text-slate-400 font-mono tracking-wider"
-                animate={{ 
-                  opacity: isMNDMode ? 0 : 1,
-                  x: isMNDMode ? -10 : 0
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                Market Next Door
-              </motion.span>
             </motion.div>
             <motion.span 
               className="w-1.5 h-1.5 rounded-full bg-rose-500 group-hover:scale-150 transition-transform duration-300" 
@@ -134,23 +149,6 @@ export function Navbar() {
               transition={{ duration: 2, repeat: Infinity }}
             />
           </a>
-
-          {/* MND Mode Toggle Button */}
-          <button
-            onClick={() => setIsMNDMode(!isMNDMode)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-rose-200 hover:border-rose-400 transition-colors cursor-pointer"
-          >
-            <motion.span
-              animate={{ rotate: isMNDMode ? 360 : 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-xs"
-            >
-              {isMNDMode ? '⚡' : '🔄'}
-            </motion.span>
-            <span className="text-[10px] font-mono text-slate-500">
-              {isMNDMode ? 'MND MODE' : 'MARKET'}
-            </span>
-          </button>
 
           {/* Desktop Navigation - Hide on mobile */}
           <ul className={`${showMobileNav ? 'hidden' : 'hidden md:flex'} items-center gap-8`}>

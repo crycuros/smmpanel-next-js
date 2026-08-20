@@ -5,15 +5,21 @@ import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { SentientSphere } from "./sentient-sphere"
 
-export function Hero() {
+interface HeroProps {
+  enable3D?: boolean
+}
+
+export function Hero({ enable3D = true }: HeroProps) {
   const containerRef = useRef<HTMLElement>(null)
+  // Only use scroll animations on capable devices
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
   })
 
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8])
+  // Use simple static values on low-power devices
+  const opacity = enable3D ? useTransform(scrollYProgress, [0, 0.5], [1, 0]) : useTransform(scrollYProgress, [0, 0.5], [1, 1])
+  const scale = enable3D ? useTransform(scrollYProgress, [0, 0.5], [1, 0.8]) : useTransform(scrollYProgress, [0, 0.5], [1, 1])
   
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -33,9 +39,11 @@ export function Hero() {
   return (
     <section ref={containerRef} className="relative h-screen w-full overflow-hidden bg-gradient-to-br from-white via-pink-50 to-rose-50">
       {/* 3D Sphere Background */}
-      <div className="absolute inset-0 opacity-20">
-        <SentientSphere />
-      </div>
+      {enable3D && (
+        <div className="absolute inset-0 opacity-20">
+          <SentientSphere />
+        </div>
+      )}
 
       {/* Typography Overlay */}
       <motion.div 

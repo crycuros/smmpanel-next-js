@@ -22,7 +22,8 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  Tag
 } from "lucide-react"
 
 export default function AdminAddFunds() {
@@ -63,6 +64,7 @@ export default function AdminAddFunds() {
         .from('funds')
         .select('*, users(username, email, balance)')
         .order('id', { ascending: false })
+        .limit(10000)
 
       if (requestsData) {
         setFundRequests(requestsData)
@@ -73,6 +75,7 @@ export default function AdminAddFunds() {
         .from('users')
         .select('client_id, username, email, balance')
         .order('client_id', { ascending: false })
+        .limit(10000)
 
       if (usersData) {
         setUsers(usersData)
@@ -144,6 +147,7 @@ export default function AdminAddFunds() {
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Services", href: "/admin/services", icon: Wrench },
+    { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "Tickets", href: "/admin/tickets", icon: MessageSquare },
     { name: "Add Funds", href: "/admin/add-funds", icon: DollarSign },
     { name: "Settings", href: "/admin/settings", icon: Settings },

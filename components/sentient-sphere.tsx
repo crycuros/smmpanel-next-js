@@ -1,147 +1,119 @@
 "use client"
 
-import { useRef, useMemo, useEffect, useState } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { MathUtils } from "three"
-import type { Mesh, ShaderMaterial } from "three"
+import { useRef, useEffect, useState, Suspense } from "react"
+import { Canvas, useFrame } from "@react-three/fiber"
+import { useGLTF, Environment, ContactShadows, OrbitControls } from "@react-three/drei"
+import * as THREE from "three"
+import type { Group } from "three"
 
-function Sphere() {
-  const meshRef = useRef<Mesh>(null)
-  const materialRef = useRef<ShaderMaterial>(null)
-  const { pointer } = useThree()
+function Flower() {
+  const groupRef = useRef<Group>(null)
+  const { scene } = useGLTF("/flower_loop.glb")
+  
+  // For smooth animation
+  const timeRef = useRef(0)
+  const baseScale = 9
 
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uMouse: { value: [0, 0] },
-    }),
-    [],
-  )
+  // Clone the scene for this instance
+  const clonedScene = scene.clone(true)
 
-  const vertexShader = `
-    uniform float uTime;
-    varying vec2 vUv;
-    varying float vDisplacement;
-    
-    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-    vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-    vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-    
-    float snoise(vec3 v) {
-      const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-      const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-      vec3 i = floor(v + dot(v, C.yyy));
-      vec3 x0 = v - i + dot(i, C.xxx);
-      vec3 g = step(x0.yzx, x0.xyz);
-      vec3 l = 1.0 - g;
-      vec3 i1 = min(g.xyz, l.zxy);
-      vec3 i2 = max(g.xyz, l.zxy);
-      vec3 x1 = x0 - i1 + C.xxx;
-      vec3 x2 = x0 - i2 + C.yyy;
-      vec3 x3 = x0 - D.yyy;
-      i = mod289(i);
-      vec4 p = permute(permute(permute(
-        i.z + vec4(0.0, i1.z, i2.z, 1.0))
-        + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-        + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-      float n_ = 0.142857142857;
-      vec3 ns = n_ * D.wyz - D.xzx;
-      vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-      vec4 x_ = floor(j * ns.z);
-      vec4 y_ = floor(j - 7.0 * x_);
-      vec4 x = x_ *ns.x + ns.yyyy;
-      vec4 y = y_ *ns.x + ns.yyyy;
-      vec4 h = 1.0 - abs(x) - abs(y);
-      vec4 b0 = vec4(x.xy, y.xy);
-      vec4 b1 = vec4(x.zw, y.zw);
-      vec4 s0 = floor(b0)*2.0 + 1.0;
-      vec4 s1 = floor(b1)*2.0 + 1.0;
-      vec4 sh = -step(h, vec4(0.0));
-      vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-      vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-      vec3 p0 = vec3(a0.xy, h.x);
-      vec3 p1 = vec3(a0.zw, h.y);
-      vec3 p2 = vec3(a1.xy, h.z);
-      vec3 p3 = vec3(a1.zw, h.w);
-      vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-      p0 *= norm.x;
-      p1 *= norm.y;
-      p2 *= norm.z;
-      p3 *= norm.w;
-      vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-      m = m * m;
-      return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-    }
-    
-    void main() {
-      vUv = uv;
-      
-      float noise = snoise(position * 1.5 + uTime * 0.15);
-      float displacement = noise * 0.15;
-      vDisplacement = displacement;
-      
-      vec3 newPosition = position + normal * displacement;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-    }
-  `
-
-  const fragmentShader = `
-    varying vec2 vUv;
-    varying float vDisplacement;
-    
-    void main() {
-      float intensity = 0.3 + vDisplacement * 2.0;
-      
-      // Pink theme colors
-      vec3 pinkLight = vec3(0.98, 0.85, 0.88);  // Light pink
-      vec3 pinkDark = vec3(0.88, 0.35, 0.58);   // Rose pink
-      
-      // Create a color based on UV and displacement
-      vec3 color = mix(pinkLight, pinkDark, intensity);
-      
-      float line = smoothstep(0.0, 0.02, abs(fract(vUv.x * 20.0) - 0.5));
-      line *= smoothstep(0.0, 0.02, abs(fract(vUv.y * 20.0) - 0.5));
-      
-      gl_FragColor = vec4(color * (1.0 - line * 0.5), 0.6);
-    }
-  `
+  // Fix texture references
+  useEffect(() => {
+    clonedScene.traverse((obj: any) => {
+      if (obj.isMesh && obj.material) {
+        // If material has a map that's a DataTexture with no image, set to null
+        if (obj.material.map && !obj.material.map.image) {
+          obj.material.map = null
+        }
+        // If material has an alphaMap that's a DataTexture with no image, set to null
+        if (obj.material.alphaMap && !obj.material.alphaMap.image) {
+          obj.material.alphaMap = null
+        }
+        // Ensure material is not in need of update
+        obj.material.needsUpdate = true
+      }
+    })
+  }, [clonedScene])
 
   useFrame((state, delta) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value += delta
-      materialRef.current.uniforms.uMouse.value = [pointer.x, pointer.y]
-    }
+    if (!groupRef.current) return
 
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.05
-      meshRef.current.rotation.x = MathUtils.lerp(meshRef.current.rotation.x, pointer.y * 0.2, 0.05)
-      meshRef.current.rotation.z = MathUtils.lerp(meshRef.current.rotation.z, pointer.x * 0.2, 0.05)
-    }
+    timeRef.current += delta
+
+    // Manual rotation - SLOW continuous spinning (0.15)
+    groupRef.current.rotation.y += delta * 0.15
+
+    // Floating effect - SLOW up and down (0.3)
+    groupRef.current.position.y = Math.sin(timeRef.current * 0.3) * 0.1
+
+    // Pulsing scale - SLOW breathing (0.2)
+    const pulseScale = baseScale + Math.sin(timeRef.current * 0.2) * 0.15
+    groupRef.current.scale.setScalar(pulseScale)
   })
 
   return (
-    <mesh ref={meshRef}>
-      <icosahedronGeometry args={[1.8, 64]} />
-      <shaderMaterial
-        ref={materialRef}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms}
-        transparent
-        wireframe
-      />
+    <primitive 
+      ref={groupRef}
+      object={clonedScene} 
+      scale={4.5}
+      position={[0, 0, 0]}
+    />
+  )
+}
+
+// Preload the model
+useGLTF.preload("/flower_loop.glb")
+
+function LoadingFallback() {
+  return (
+    <mesh>
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshStandardMaterial color="#fecdd3" wireframe />
     </mesh>
   )
 }
 
 export function SentientSphere() {
   const [mounted, setMounted] = useState(false)
+  const [hasWebGL, setHasWebGL] = useState(true)
 
   useEffect(() => {
+    // Check for WebGL support
+    try {
+      const canvas = document.createElement('canvas')
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null
+      if (!gl) {
+        setHasWebGL(false)
+      } else {
+        // Check for decent GPU (basic check)
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info')
+        if (debugInfo) {
+          const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+          // If it's software rendering or very basic, skip 3D
+          if (renderer.toLowerCase().includes('swift') || 
+              renderer.toLowerCase().includes('software') ||
+              renderer.toLowerCase().includes('llvmpipe')) {
+            setHasWebGL(false)
+          }
+        }
+      }
+    } catch (e) {
+      setHasWebGL(false)
+    }
+    
     setMounted(true)
   }, [])
 
+  // Show fallback if no WebGL
+  if (!hasWebGL) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="w-64 h-64 rounded-full bg-gradient-to-br from-rose-300 to-pink-400 animate-pulse" />
+      </div>
+    )
+  }
+
+  // Show loading state during SSR
   if (!mounted) {
     return (
       <div className="w-full h-full flex items-center justify-center">
@@ -152,16 +124,44 @@ export function SentientSphere() {
 
   return (
     <Canvas
-      camera={{ position: [0, 0, 5], fov: 45 }}
+      camera={{ position: [50, 10, 50], fov: 45 }}
       className="w-full my-0 h-full py-0"
       dpr={[1, 2]}
       gl={{
         antialias: true,
         alpha: true,
+        powerPreference: "high-performance",
       }}
     >
-      <ambientLight intensity={0.5} />
-      <Sphere />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[10, 10, 5]} intensity={1} />
+      <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#fecdd3" />
+      <pointLight position={[0, 0, 10]} intensity={0.5} />
+      
+      <Suspense fallback={<LoadingFallback />}>
+        <Flower />
+        <Environment preset="sunset" />
+      </Suspense>
+      
+      <ContactShadows
+        position={[0, -2.5, 0]}
+        opacity={0.4}
+        scale={15}
+        blur={2.5}
+        far={4}
+      />
+      
+      {/* Auto-rotating camera - SLOW (0.3) */}
+      <OrbitControls 
+        autoRotate 
+        autoRotateSpeed={0.3}
+        enableZoom={false}
+        enablePan={false}
+        enableRotate={false}
+        makeDefault
+      />
     </Canvas>
   )
 }
+
+

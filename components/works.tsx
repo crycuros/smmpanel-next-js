@@ -9,25 +9,25 @@ const projects = [
   {
     title: "Instagram Followers",
     tags: ["Instant", "Real", "Best Price"],
-    image: "/abstract-neural-network-visualization-dark-theme.jpg",
+    image: "/follow.png",
     year: "2024",
   },
   {
     title: "TikTok Views",
     tags: ["Viral", "Fast", "Bulk"],
-    image: "/futuristic-data-dashboard-dark-minimal.jpg",
+    image: "/views.png",
     year: "2024",
   },
   {
     title: "YouTube Subscribers",
     tags: ["Quality", "Retention", "Safe"],
-    image: "/abstract-memory-storage-visualization.jpg",
+    image: "/subs.png",
     year: "2023",
   },
   {
     title: "Facebook Likes",
     tags: ["Page Likes", "Post Engagement"],
-    image: "/sound-wave-visualization-dark-theme.jpg",
+    image: "/like.png",
     year: "2023",
   },
 ]
@@ -142,7 +142,7 @@ export function Works() {
             />
           )}
           {/* Glitch overlay */}
-          <div className="absolute inset-0 bg-rose-500/10 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-rose-500/0" />
         </motion.div>
       </div>
 

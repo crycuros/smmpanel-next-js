@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Twemoji - Twitter's open source emoji images */
+img.joypixels-emoji {
+  width: 1.2em;
+  height: 1.2em;
+  margin: 0 0.1em;
+  vertical-align: -0.15em;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* Pink SMM Panel Theme */
@@ -131,18 +139,29 @@
     @apply bg-background text-foreground;
   }
   
-  /* Custom cursor only on non-touch devices (desktop with mouse) */
-  @media (pointer: fine) {
-    html {
-      cursor: none;
+  /* Hide cursor globally for custom cursor - remove for touch devices */
+  html, body {
+    cursor: none;
+  }
+  * {
+    cursor: none !important;
+  }
+  /* But allow text selection to show text cursor */
+  input,
+  textarea,
+  [contenteditable="true"],
+  code,
+  pre {
+    cursor: text !important;
+  }
+  
+  /* For touch devices, show pointer */
+  @media (pointer: coarse) {
+    html, body {
+      cursor: auto;
     }
-    a,
-    button,
-    input,
-    textarea,
-    select,
-    [data-cursor-hover] {
-      cursor: none !important;
+    * {
+      cursor: pointer !important;
     }
   }
   
@@ -238,4 +257,43 @@
 
 .animate-marquee-right {
   animation: marquee-right 50s linear infinite;
+}
+
+/* GPU Acceleration for smoother animations */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-marquee-left,
+  .animate-marquee-right {
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-marquee-left,
+  .animate-marquee-right {
+    animation-play-state: paused !important;
+  }
+}
+
+/* Performance optimizations for animations */
+@media (prefers-reduced-motion: no-preference) {
+  [data-animate] {
+    will-change: transform, opacity;
+  }
+  
+  .motion-div,
+  .motion-preset-\33 {
+    transform: translate3d(0, 0, 0);
+  }
 }

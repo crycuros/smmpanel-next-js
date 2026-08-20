@@ -23,6 +23,7 @@ import {
   Trash2,
   X,
   Check,
+  Tag,
   Clock,
   AlertCircle
 } from "lucide-react"
@@ -66,6 +67,7 @@ export default function AdminOrders() {
         .from('orders')
         .select('*, users(username, email)')
         .order('order_id', { ascending: false })
+        .limit(10000)
 
       // Fetch services
       const { data: servicesData } = await supabase
@@ -149,6 +151,7 @@ export default function AdminOrders() {
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Orders", href: "/admin/orders", icon: ShoppingCart },
     { name: "Services", href: "/admin/services", icon: Wrench },
+    { name: "Categories", href: "/admin/categories", icon: Tag },
     { name: "Tickets", href: "/admin/tickets", icon: MessageSquare },
     { name: "Add Funds", href: "/admin/add-funds", icon: DollarSign },
     { name: "Settings", href: "/admin/settings", icon: Settings },

@@ -136,3 +136,13 @@ dist
 .pnp.*
 generate-hashes.js
 plans/facebook-auto-fetch-plan.md
+
+.vercel
+.env*
+supabase.txt
+keys.txt
+error sql.txt
+smmpanel-deploy.zip
+dart_tool/
+.flutter-plugins-dependencies
+pubspec.lock

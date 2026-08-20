@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           getAll() {
-            return request.cookies.getAll()
+            return cookieStore.getAll()
           },
-          setAll() {
-            // Handled by exchangeCodeForSession
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
           },
         },
       }
@@ -28,7 +33,7 @@ export async function GET(request: NextRequest) {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
 
       if (!userError && user) {
-        // Check if user exists in our users table
+        // Sync user with our database if needed
         const { data: dbUser } = await supabase
           .from('users')
           .select('*')
@@ -37,31 +42,23 @@ export async function GET(request: NextRequest) {
 
         if (!dbUser || dbUser.length === 0) {
           // Create new user in our database
-          const { data: newUser } = await supabase
+          await supabase
             .from('users')
             .insert({
               email: user.email,
               name: user.user_metadata?.full_name || user.user_metadata?.name || 'OAuth User',
               username: user.user_metadata?.user_name || user.email?.split('@')[0] || 'user',
-              password: '', // OAuth users don't have password
-              balance: '0',
-              spent: '0',
+              password: '', 
+              balance: 0,
+              spent: 0,
               is_admin: false,
               status: 'active',
+              role: 'user'
             })
-            .select()
-            .limit(1)
-
-          if (newUser && newUser.length > 0) {
-            // Redirect to signin with user data encoded
-            const userData = encodeURIComponent(JSON.stringify(newUser[0]))
-            return NextResponse.redirect(`${origin}/signin?oauth_success=true&user=${userData}`)
-          }
-        } else {
-          // User exists, redirect with their data
-          const userData = encodeURIComponent(JSON.stringify(dbUser[0]))
-          return NextResponse.redirect(`${origin}/signin?oauth_success=true&user=${userData}`)
         }
+        
+        // Redirect to dashboard (session cookie is now set)
+        return NextResponse.redirect(`${origin}${next}`)
       }
     }
 
@@ -70,3 +67,4 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.redirect(`${origin}/signin?error=OAuth+error`)
 }
+

@@ -14,7 +14,7 @@ export default async function Image() {
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d0d2b 100%)',
+          background: 'linear-gradient(135deg, #1a0a1e 0%, #2d1233 50%, #1a0a1e 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -35,7 +35,7 @@ export default async function Image() {
             width: '500px',
             height: '500px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(108,92,231,0.3) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(232,54,141,0.35) 0%, transparent 70%)',
           }}
         />
         <div
@@ -46,7 +46,7 @@ export default async function Image() {
             width: '400px',
             height: '400px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(236,72,153,0.25) 0%, transparent 70%)',
           }}
         />
 
@@ -58,7 +58,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             height: '4px',
-            background: 'linear-gradient(90deg, #6c5ce7, #a855f7)',
+            background: 'linear-gradient(90deg, #E8368D, #EC4899, #F472B6)',
           }}
         />
 
@@ -84,7 +84,7 @@ export default async function Image() {
             width: '300px',
             height: '4px',
             borderRadius: '2px',
-            background: 'linear-gradient(90deg, #6c5ce7, #a855f7)',
+            background: 'linear-gradient(90deg, #E8368D, #EC4899, #F472B6)',
             marginBottom: '20px',
           }}
         />
@@ -93,7 +93,7 @@ export default async function Image() {
         <div
           style={{
             fontSize: '28px',
-            color: '#a0a0c0',
+            color: '#d4a0b8',
             marginBottom: '40px',
           }}
         >
@@ -115,9 +115,9 @@ export default async function Image() {
                 style={{
                   padding: '10px 24px',
                   borderRadius: '22px',
-                  border: '1px solid rgba(108,92,231,0.4)',
-                  background: 'rgba(108,92,231,0.15)',
-                  color: '#a78bfa',
+                  border: '1px solid rgba(232,54,141,0.4)',
+                  background: 'rgba(232,54,141,0.15)',
+                  color: '#F472B6',
                   fontSize: '18px',
                   fontWeight: 500,
                 }}
@@ -150,7 +150,7 @@ export default async function Image() {
         <div
           style={{
             fontSize: '22px',
-            color: '#6c5ce7',
+            color: '#E8368D',
             fontWeight: 600,
             letterSpacing: '3px',
           }}
@@ -166,7 +166,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             height: '4px',
-            background: 'linear-gradient(90deg, #6c5ce7, #a855f7)',
+            background: 'linear-gradient(90deg, #E8368D, #EC4899, #F472B6)',
           }}
         />
       </div>

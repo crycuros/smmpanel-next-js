@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, ReactNode } from "react"
+import { useState } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -99,7 +100,7 @@ export default function AdminLayout({
           <button 
             onClick={() => {
               localStorage.removeItem('admin')
-              router.push('/signin')
+              router.push('/admin')
             }}
             className="flex items-center gap-3 px-4 py-3 w-full text-slate-300 hover:bg-slate-700 rounded-xl transition-colors"
           >

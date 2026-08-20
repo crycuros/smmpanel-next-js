@@ -316,10 +316,12 @@ export async function POST(req: NextRequest) {
 
           if (call?.name === "search_services") {
             const { keyword } = call.args as any;
+            // Escape SQL wildcards to prevent injection via % or _
+            const safeKeyword = keyword.replace(/[%_\\]/g, '\\$&');
             const { data: results } = await supabase
               .from('services')
               .select('service_id, service_name, service_price')
-              .or(`service_name.ilike.%${keyword}%,service_id.eq.${isNaN(parseInt(keyword)) ? -1 : parseInt(keyword)}`)
+              .or(`service_name.ilike.%${safeKeyword}%,service_id.eq.${isNaN(parseInt(keyword)) ? -1 : parseInt(keyword)}`)
               .gt('service_price', 0)
               .limit(10);
             

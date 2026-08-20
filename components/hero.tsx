@@ -17,9 +17,13 @@ export function Hero({ enable3D = true }: HeroProps) {
     offset: ["start start", "end start"],
   })
 
-  // Use simple static values on low-power devices
-  const opacity = enable3D ? useTransform(scrollYProgress, [0, 0.5], [1, 0]) : useTransform(scrollYProgress, [0, 0.5], [1, 1])
-  const scale = enable3D ? useTransform(scrollYProgress, [0, 0.5], [1, 0.8]) : useTransform(scrollYProgress, [0, 0.5], [1, 1])
+  // Always call hooks unconditionally, then pick values based on enable3D
+  const scrollOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+  const scrollScale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8])
+  const staticOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 1])
+  const staticScale = useTransform(scrollYProgress, [0, 0.5], [1, 1])
+  const opacity = enable3D ? scrollOpacity : staticOpacity
+  const scale = enable3D ? scrollScale : staticScale
   
   const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [user, setUser] = useState<any>(null)

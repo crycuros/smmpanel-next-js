@@ -186,7 +186,7 @@ export default function BrutalistSidebar() {
         initial={false}
         animate={{ x: isOpen ? 0 : -320 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={`fixed left-0 top-0 h-screen bg-white/95 backdrop-blur-xl border-r border-rose-100 z-45 flex flex-col ${
+        className={`fixed left-0 top-0 h-screen bg-white/95 backdrop-blur-xl border-r border-rose-100 z-[45] flex flex-col ${
           shouldShowSidebar ? 'hidden' : 'w-[300px] block'
         }`}
       >
@@ -261,7 +261,7 @@ export default function BrutalistSidebar() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -300 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed left-0 top-0 h-screen w-[300px] bg-white/95 backdrop-blur-xl border-r border-rose-100 z-45 flex flex-col"
+            className="fixed left-0 top-0 h-screen w-[300px] bg-white/95 backdrop-blur-xl border-r border-rose-100 z-[45] flex flex-col"
           >
             {/* Logo */}
             <div className="p-6 flex items-center justify-between">

@@ -34,6 +34,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://smmfeeds.com"),
   title: "SMMFeeds - Best SMM Panel Philippines",
   description: "Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
   generator: 'v0.app',

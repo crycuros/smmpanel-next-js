@@ -34,12 +34,34 @@ const ibmPlexMono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "MND - Marketer Next Door | Best SMM Panel Philippines",
-  description: "Best SMM Panel in the Philippines. Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
+  title: "SMMFeeds - Best SMM Panel Philippines",
+  description: "Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
   generator: 'v0.app',
   icons: {
     icon: '/mnd-favicon.svg',
     apple: '/mnd-favicon.svg',
+  },
+  openGraph: {
+    title: "SMMFeeds - Best SMM Panel Philippines",
+    description: "Get instant social media followers, likes, views and engagement. Affordable pricing with 24/7 support.",
+    url: "https://smmfeeds.com",
+    siteName: "SMMFeeds",
+    images: [
+      {
+        url: "https://smmfeeds.com/placeholder.jpg",
+        width: 1200,
+        height: 630,
+        alt: "SMMFeeds - Best SMM Panel Philippines",
+      },
+    ],
+    locale: "en_PH",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SMMFeeds - Best SMM Panel Philippines",
+    description: "Get instant social media followers, likes, views and engagement.",
+    images: ["https://smmfeeds.com/placeholder.jpg"],
   },
 }
 

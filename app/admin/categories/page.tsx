@@ -95,70 +95,61 @@ export default function AdminCategories() {
   const fetchCategories = async () => {
     setIsLoading(true)
     try {
-      // Fetch categories
-      let query = supabase
-        .from('categories')
-        .select('category_id, category_name')
-        .order('category_id', { ascending: true })
-      
-      const { data: categoriesData, error: catError } = await query
-      
-      if (catError) {
-        // Try without category_deleted filter if column doesn't exist
-        const { data: fallbackData, error: fallbackError } = await supabase
+      // Fetch ALL categories with pagination (Supabase default limit is 1000)
+      const pageSize = 1000
+      let allCategories: any[] = []
+      let from = 0
+      let hasMore = true
+
+      while (hasMore) {
+        const { data, error } = await supabase
           .from('categories')
           .select('category_id, category_name')
           .order('category_id', { ascending: true })
-        if (fallbackError) throw fallbackError
-        else {
-          // Use fallback data but set service counts to 0
-          const categoriesWithCounts = (fallbackData || []).map((cat: any) => ({
-            ...cat,
-            service_count: 0
-          }))
-          setCategories(categoriesWithCounts)
-          setServices([])
-          setIsLoading(false)
-          return
-        }
-      }
-      
-      // Get total services count directly from database
-      const { count: totalServicesCount, error: countError } = await supabase
-        .from('services')
-        .select('*', { count: 'exact', head: true })
-      
-      if (countError) {
-        console.error('Error counting services:', countError)
-      }
-      
-      // Set total services count
-      setTotalServicesCount(totalServicesCount || 0)
-      
-      // Fetch all services with details using pagination to get all 1754+ services
-      const pageSize = 1000
-      let allServices: any[] = []
-      let from = 0
-      let hasMore = true
-      
-      while (hasMore) {
-        const { data: servicesPage, error: svcError } = await supabase
-          .from('services')
-          .select('service_id, service_name, service_price, service_api, category_id')
-          .order('service_id', { ascending: true })
           .range(from, from + pageSize - 1)
-        
-        if (svcError) throw svcError
-        
-        if (servicesPage && servicesPage.length > 0) {
-          allServices = [...allServices, ...servicesPage]
+
+        if (error) throw error
+
+        if (data && data.length > 0) {
+          allCategories = [...allCategories, ...data]
           from += pageSize
-          hasMore = servicesPage.length === pageSize
+          hasMore = data.length === pageSize
         } else {
           hasMore = false
         }
       }
-      
+
+      // Get total services count
+      const { count: totalServicesCount } = await supabase
+        .from('services')
+        .select('*', { count: 'exact', head: true })
+
+      setTotalServicesCount(totalServicesCount || 0)
+
+      // Fetch all services with pagination
+      const svcPageSize = 1000
+      let allServices: any[] = []
+      let svcFrom = 0
+      let svcHasMore = true
+
+      while (svcHasMore) {
+        const { data: servicesPage, error: svcError } = await supabase
+          .from('services')
+          .select('service_id, service_name, service_price, service_api, category_id')
+          .order('service_id', { ascending: true })
+          .range(svcFrom, svcFrom + svcPageSize - 1)
+
+        if (svcError) throw svcError
+
+        if (servicesPage && servicesPage.length > 0) {
+          allServices = [...allServices, ...servicesPage]
+          svcFrom += svcPageSize
+          svcHasMore = servicesPage.length === svcPageSize
+        } else {
+          svcHasMore = false
+        }
+      }
+
       setServices(allServices)
       
       // Count services per category
@@ -170,7 +161,7 @@ export default function AdminCategories() {
       })
       
       // Merge counts into categories
-      const categoriesWithCounts = (categoriesData || []).map((cat: any) => ({
+      const categoriesWithCounts = (allCategories || []).map((cat: any) => ({
         ...cat,
         service_count: serviceCounts[cat.category_id] || 0
       }))

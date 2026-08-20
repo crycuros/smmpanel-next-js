@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
 
     // Identify provider and its currency
     const providerId = serviceData?.api_provider || 'weboostph';
-    const providerCurrency = getProviderCurrency(providerId);
+    const isCustomService = providerId === 'custom' || serviceData?.api_serviceid === 0;
+    const providerCurrency = isCustomService ? 'PHP' : getProviderCurrency(providerId);
 
     // service_price in our DB is assumed to be in PHP (Base)
     const customerPricePHP = (parseFloat(serviceData.service_price) || 0) * (quantity / 1000);
@@ -98,14 +99,21 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Submit order to provider
-    const providerOrderResult = await submitOrderToProvider(
-      providerServiceId, 
-      link, 
-      quantity, 
-      runs, 
-      interval,
-      providerId
-    );
+    let providerOrderResult: any = { order: 0 };
+    
+    if (isCustomService) {
+      // Custom service — no provider API call, admin fulfills manually
+      providerOrderResult = { order: 0 };
+    } else {
+      providerOrderResult = await submitOrderToProvider(
+        providerServiceId, 
+        link, 
+        quantity, 
+        runs, 
+        interval,
+        providerId
+      );
+    }
 
     if (providerOrderResult.error) {
       // 7. Refund if provider fails
@@ -128,7 +136,7 @@ export async function POST(request: NextRequest) {
       order_charge: customerPricePHP, 
       api_charge: convertCurrency(providerCostCurrency, providerCurrency, SITE_BASE_CURRENCY, rates),   
       order_profit: profitPHP,       
-      order_status: 'pending',
+      order_status: isCustomService ? 'pending' : 'pending',
       order_create: new Date().toISOString(),
       last_check: new Date().toISOString(),
       order_where: 'site',

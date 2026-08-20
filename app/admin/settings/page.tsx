@@ -494,6 +494,23 @@ export default function AdminSettings() {
     return selectedCount > 0 && selectedCount < categoryServiceIds.length
   }
 
+  // Select all / deselect all categories
+  const handleToggleAllCategories = () => {
+    const allCategoryIds = providerCategories.map(c => c.id)
+    const allSelected = allCategoryIds.length > 0 && allCategoryIds.every(id => selectedCategories.has(id))
+
+    if (allSelected) {
+      setSelectedCategories(new Set())
+      setSelectedServices(new Set())
+    } else {
+      const newSelectedCategories = new Set(allCategoryIds)
+      const newSelectedServices = new Set<string>()
+      providerCategories.forEach(c => c.services.forEach(s => newSelectedServices.add(s.service)))
+      setSelectedCategories(newSelectedCategories)
+      setSelectedServices(newSelectedServices)
+    }
+  }
+
   // Get selected services count
   const getSelectedCount = () => {
     return selectedServices.size
@@ -1022,7 +1039,13 @@ export default function AdminSettings() {
                         <h3 className="font-mono text-sm text-white font-semibold">Available Categories</h3>
                         <p className="font-mono text-xs text-slate-400">{providerCategories.length} categories, {providerCategories.reduce((acc, c) => acc + c.services.length, 0)} services</p>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleToggleAllCategories}
+                          className="font-mono text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                        >
+                          {providerCategories.length > 0 && providerCategories.every(c => selectedCategories.has(c.id)) ? 'Deselect All' : 'Select All'}
+                        </button>
                         <p className="font-mono text-sm text-rose-400">{getSelectedCount()} selected</p>
                       </div>
                     </div>

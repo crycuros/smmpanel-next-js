@@ -185,7 +185,7 @@ export default function Services() {
         const { data: servicesPage, error: svcError } = await supabase
           .from('services')
           .select('*')
-          .order('service_line', { ascending: true })
+          .order('service_id', { ascending: true })
           .range(from, from + pageSize - 1)
         
         if (servicesPage && servicesPage.length > 0) {

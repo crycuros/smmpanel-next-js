@@ -214,18 +214,23 @@ export default function NewOrder() {
         setSelectedCategory(categoriesData[0].category_id)
       }
 
-      // Fetch services with pagination to get all 1754+ services
+      // Fetch services with pagination
       const pageSize = 1000
       let allServices: any[] = []
       let from = 0
       let hasMore = true
       
       while (hasMore) {
-        const { data: servicesPage } = await supabase
+        const { data: servicesPage, error: svcErr } = await supabase
           .from('services')
           .select('*')
-          .order('service_line', { ascending: true })
+          .order('service_id', { ascending: true })
           .range(from, from + pageSize - 1)
+        
+        if (svcErr) {
+          console.error('Services fetch error:', svcErr)
+          break
+        }
         
         if (servicesPage && servicesPage.length > 0) {
           allServices = [...allServices, ...servicesPage]

@@ -12,12 +12,6 @@ import {
   Wrench, 
   Wallet, 
   MessageSquare, 
-  Code, 
-  Users, 
-  Gift, 
-  RefreshCw, 
-  ArrowRightLeft,
-  CheckCircle,
   PanelLeftClose,
   PanelLeft
 } from "lucide-react"
@@ -28,12 +22,6 @@ const navItems = [
   { name: "Services", href: "/dashboard/services", icon: Wrench },
   { name: "Add Funds", href: "/dashboard/add-funds", icon: Wallet },
   { name: "Tickets", href: "/dashboard/tickets", icon: MessageSquare },
-  { name: "API", href: "/dashboard/api", icon: Code },
-  { name: "Child Panels", href: "/dashboard/child-panels", icon: Users },
-  { name: "Refer & Earn", href: "/dashboard/refer", icon: Gift },
-  { name: "Daily Updates", href: "/dashboard/updates", icon: RefreshCw },
-  { name: "Transfer Funds", href: "/dashboard/transfer", icon: ArrowRightLeft },
-  { name: "Completed Orders", href: "/dashboard/completed", icon: CheckCircle },
 ]
 
 export default function BrutalistSidebar() {

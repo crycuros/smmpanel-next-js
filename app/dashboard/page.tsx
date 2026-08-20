@@ -101,7 +101,6 @@ export default function Dashboard() {
               { name: 'Services', icon: Activity, href: '/dashboard/services', desc: 'Browse services' },
               { name: 'Orders', icon: Clock, href: '/dashboard/orders', desc: 'View all orders' },
               { name: 'Tickets', icon: Users, href: '/dashboard/tickets', desc: 'Get support' },
-              { name: 'API', icon: Activity, href: '/dashboard/api', desc: 'Developer docs' },
             ].map((action) => {
               const Icon = action.icon
               return (

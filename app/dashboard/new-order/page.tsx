@@ -53,8 +53,8 @@ interface Service {
   service_name: string
   category_id: number
   service_price: string
-  service_min: number
-  service_max: number
+  min_order: number
+  max_order: number
   service_line: number
   api_detail: any
   service_refill?: string
@@ -578,7 +578,7 @@ export default function NewOrder() {
                   {formatPrice(parseFloat(service.service_price))} / 1k
                 </span>
                 <span className={`font-mono text-xs ${selectedService?.service_id === service.service_id ? "text-rose-100" : "text-slate-400"}`}>
-                  Min: {service.service_min} - Max: {service.service_max}
+                  Min: {service.min_order} - Max: {service.service_max}
                 </span>
               </div>
             </button>
@@ -616,11 +616,11 @@ export default function NewOrder() {
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-rose-50">
                   <span className="font-mono text-xs text-slate-500">Minimum</span>
-                  <span className="font-mono text-sm text-slate-700">{selectedService.service_min}</span>
+                  <span className="font-mono text-sm text-slate-700">{selectedService.min_order}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-rose-50">
                   <span className="font-mono text-xs text-slate-500">Maximum</span>
-                  <span className="font-mono text-sm text-slate-700">{selectedService.service_max.toLocaleString()}</span>
+                  <span className="font-mono text-sm text-slate-700">{selectedService.max_order.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-rose-50">
                   <span className="font-mono text-xs text-slate-500">Category</span>
@@ -910,15 +910,15 @@ export default function NewOrder() {
               </div>
               <div>
                 <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
-                  Quantity <span className="text-slate-400">Min: {selectedService.service_min} - Max: {selectedService.service_max}</span>
+                  Quantity <span className="text-slate-400">Min: {selectedService.min_order} - Max: {selectedService.max_order}</span>
                 </label>
                 <input
                   type="number"
                   placeholder="Enter quantity"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  min={selectedService.service_min}
-                  max={selectedService.service_max}
+                  min={selectedService.min_order}
+                  max={selectedService.max_order}
                   required
                   className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
                 />

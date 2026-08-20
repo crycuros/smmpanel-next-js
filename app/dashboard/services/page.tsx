@@ -32,10 +32,10 @@ interface Service {
   service_name: string
   category_id: number
   service_price: string
-  service_min: number
-  service_max: number
+  min_order: number
+  max_order: number
   service_line: number
-  service_description: string
+  service_desc: string
   time: string
   average_time: number
   service_refill?: string
@@ -259,10 +259,10 @@ export default function Services() {
           service_name: item.service_name,
           category_id: item.category_id,
           service_price: item.service_price,
-          service_min: item.service_min,
-          service_max: item.service_max,
+          min_order: item.min_order,
+          max_order: item.max_order,
           service_line: item.service_line,
-          service_description: item.service_description || '',
+          service_desc: item.service_desc || '',
           time: 'N/A',
           average_time: 0,
           service_refill: item.service_refill
@@ -508,7 +508,7 @@ export default function Services() {
                           </td>
                           <td className="p-4">
                             <span className="font-mono text-sm text-slate-600">
-                              {service.service_min.toLocaleString()} / {service.service_max.toLocaleString()}
+                              {service.min_order.toLocaleString()} / {service.max_order.toLocaleString()}
                             </span>
                           </td>
                           <td className="p-4">
@@ -519,7 +519,7 @@ export default function Services() {
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               <span className="font-mono text-xs text-slate-500 line-clamp-1">
-                                {service.service_description || 'No description'}
+                                {service.service_desc || 'No description'}
                               </span>
                               <ChevronDown 
                                 size={16} 
@@ -540,11 +540,11 @@ export default function Services() {
                                   </div>
                                   <div>
                                     <p className="font-mono text-xs text-slate-500 mb-1">Minimum Order</p>
-                                    <p className="font-mono text-slate-700">{service.service_min.toLocaleString()}</p>
+                                    <p className="font-mono text-slate-700">{service.min_order.toLocaleString()}</p>
                                   </div>
                                   <div>
                                     <p className="font-mono text-xs text-slate-500 mb-1">Maximum Order</p>
-                                    <p className="font-mono text-slate-700">{service.service_max.toLocaleString()}</p>
+                                    <p className="font-mono text-slate-700">{service.max_order.toLocaleString()}</p>
                                   </div>
                                   <div>
                                     <p className="font-mono text-xs text-slate-500 mb-1">Average Completion Time</p>
@@ -552,7 +552,7 @@ export default function Services() {
                                   </div>
                                   <div className="md:col-span-2">
                                     <p className="font-mono text-xs text-slate-500 mb-1">Description</p>
-                                    <p className="font-mono text-slate-700">{service.service_description || 'No description available'}</p>
+                                    <p className="font-mono text-slate-700">{service.service_desc || 'No description available'}</p>
                                   </div>
                                 </div>
                               </div>

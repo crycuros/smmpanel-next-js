@@ -72,7 +72,7 @@ export default function AdminUsers() {
     setIsLoading(true)
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('clients')
         .select('*')
         .order('client_id', { ascending: false })
         .limit(10000)
@@ -95,7 +95,7 @@ export default function AdminUsers() {
   const handleAddUser = async () => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('clients')
         .insert([
           {
             name: formData.name,
@@ -125,7 +125,7 @@ export default function AdminUsers() {
     
     try {
       const { error } = await supabase
-        .from('users')
+        .from('clients')
         .update({
           name: formData.name,
           email: formData.email,
@@ -152,7 +152,7 @@ export default function AdminUsers() {
     
     try {
       const { error } = await supabase
-        .from('users')
+        .from('clients')
         .delete()
         .eq('client_id', clientId)
 

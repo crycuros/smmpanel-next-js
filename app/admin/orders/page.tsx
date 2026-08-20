@@ -62,10 +62,10 @@ export default function AdminOrders() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch orders with user info
+      // Fetch orders with user info (client_id references clients table)
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('*, users(username, email)')
+        .select('*, clients(username, email)')
         .order('order_id', { ascending: false })
         .limit(10000)
 

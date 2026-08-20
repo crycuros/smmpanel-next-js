@@ -74,7 +74,7 @@ export default function AdminDashboard() {
     try {
       // Fetch users count
       const { count: usersCount } = await supabase
-        .from('users')
+        .from('clients')
         .select('*', { count: 'exact', head: true })
 
       // Fetch orders
@@ -151,7 +151,7 @@ export default function AdminDashboard() {
 
       // Fetch recent users
       const { data: recentUsersData } = await supabase
-        .from('users')
+        .from('clients')
         .select('*')
         .order('client_id', { ascending: false })
         .limit(10)

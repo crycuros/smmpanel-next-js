@@ -59,10 +59,10 @@ export default function AdminAddFunds() {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      // Fetch fund requests
+      // Fetch fund requests (user_id references clients table)
       const { data: requestsData } = await supabase
         .from('funds')
-        .select('*, users(username, email, balance)')
+        .select('*, clients(username, email, balance)')
         .order('id', { ascending: false })
         .limit(10000)
 
@@ -72,7 +72,7 @@ export default function AdminAddFunds() {
 
       // Fetch users for manual add
       const { data: usersData } = await supabase
-        .from('users')
+        .from('clients')
         .select('client_id, username, email, balance')
         .order('client_id', { ascending: false })
         .limit(10000)
@@ -104,7 +104,7 @@ export default function AdminAddFunds() {
 
       // Update user balance
       const { error: balanceError } = await supabase
-        .from('users')
+        .from('clients')
         .update({ balance: (await getUserBalance(userId)) + amount })
         .eq('client_id', userId)
 
@@ -135,7 +135,7 @@ export default function AdminAddFunds() {
 
   const getUserBalance = async (userId: number) => {
     const { data } = await supabase
-      .from('users')
+      .from('clients')
       .select('balance')
       .eq('client_id', userId)
       .single()

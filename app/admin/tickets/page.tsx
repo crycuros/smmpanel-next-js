@@ -93,7 +93,7 @@ export default function AdminTickets() {
         
         // Fetch user data
         const { data: usersData } = await supabase
-          .from('users')
+          .from('clients')
           .select('client_id, username, email')
           .in('client_id', clientIds)
         

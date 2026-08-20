@@ -208,7 +208,7 @@ export default function AdminSettings() {
       if (!user?.email) return
       try {
         const { data } = await supabase
-          .from('users')
+          .from('clients')
           .select('totp_secret')
           .eq('email', user.email)
           .single()

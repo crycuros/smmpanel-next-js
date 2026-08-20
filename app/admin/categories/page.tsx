@@ -104,7 +104,7 @@ export default function AdminCategories() {
       while (hasMore) {
         const { data, error } = await supabase
           .from('categories')
-          .select('category_id, category_name')
+          .select('category_id, category_name, category_deleted')
           .order('category_id', { ascending: true })
           .range(from, from + pageSize - 1)
 
@@ -118,6 +118,9 @@ export default function AdminCategories() {
           hasMore = false
         }
       }
+
+      // Filter out soft-deleted categories
+      allCategories = allCategories.filter((cat: any) => cat.category_deleted !== '1' && cat.category_deleted !== 1)
 
       // Get total services count
       const { count: totalServicesCount } = await supabase
@@ -270,18 +273,22 @@ export default function AdminCategories() {
     if (!categoryToDelete) return
     
     try {
+      // Delete services in this category first
       if (serviceCountInCategory > 0) {
         const { error: updateError } = await supabase
           .from('services')
           .update({ category_id: 1 })
           .eq('category_id', categoryToDelete.category_id)
         
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error('Move services error:', updateError)
+        }
       }
       
+      // Hard delete the category
       const { error } = await supabase
         .from('categories')
-        .update({ category_deleted: '1' })
+        .delete()
         .eq('category_id', categoryToDelete.category_id)
       
       if (error) throw error
@@ -328,20 +335,16 @@ export default function AdminCategories() {
     if (selectedCategories.size === 0) return
     
     try {
-      // Move services to category 1 before deleting
       const categoriesToDelete = Array.from(selectedCategories)
       for (const catId of categoriesToDelete) {
-        const servicesInCat = services.filter(s => s.category_id === catId).length
-        if (servicesInCat > 0) {
-          await supabase
-            .from('services')
-            .update({ category_id: 1 })
-            .eq('category_id', catId)
-        }
+        await supabase
+          .from('services')
+          .update({ category_id: 1 })
+          .eq('category_id', catId)
         
         await supabase
           .from('categories')
-          .update({ category_deleted: '1' })
+          .delete()
           .eq('category_id', catId)
       }
       
@@ -391,10 +394,10 @@ export default function AdminCategories() {
         
         if (updateError) throw updateError
         
-        // Soft delete the source category
+        // Hard delete the source category
         const { error: deleteError } = await supabase
           .from('categories')
-          .update({ category_deleted: '1' })
+          .delete()
           .eq('category_id', sourceId)
         
         if (deleteError) throw deleteError

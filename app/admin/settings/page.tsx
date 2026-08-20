@@ -573,7 +573,7 @@ export default function AdminSettings() {
     await processImport(provider, selectedServices, selectedCategories, providerCategories)
   }
 
-  // Process the actual import - calls server-side API
+  // Process the actual import - sends in chunks to avoid timeout
   const processImport = async (
     prov: Provider, 
     selectedSvs: Set<string>, 
@@ -593,34 +593,58 @@ export default function AdminSettings() {
         if (partialMatch) {
           if (routingOption === "new") {
             resolvedName = newCategoryName || cat.name
-          } else if (routingOption === "existing") {
-            // resolvedName stays as-is, server will look up by name
           }
         }
         return { ...cat, name: resolvedName }
       })
 
-      const response = await fetch('/api/admin/import-services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          categories: processedCategories,
-          selectedServiceIds: Array.from(selectedSvs),
-          profitPercent: profit,
-          providerId: prov.id,
-          providerCurrency: (prov as any).currency || 'PHP'
+      // Flatten selected services into a flat array
+      const allSelectedServices: any[] = []
+      for (const cat of processedCategories) {
+        for (const svc of cat.services) {
+          if (selectedSvs.has(svc.service)) {
+            allSelectedServices.push({ ...svc, category: cat.name })
+          }
+        }
+      }
+
+      const CHUNK_SIZE = 200
+      const totalChunks = Math.ceil(allSelectedServices.length / CHUNK_SIZE)
+      let totalImported = 0
+      let totalUpdated = 0
+
+      for (let i = 0; i < totalChunks; i++) {
+        const chunk = allSelectedServices.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE)
+        
+        setImportStatus({
+          type: 'success',
+          message: `Importing... chunk ${i + 1}/${totalChunks} (${totalImported} new, ${totalUpdated} updated so far)`
         })
-      })
 
-      const result = await response.json()
+        const response = await fetch('/api/admin/import-services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            services: chunk,
+            profitPercent: profit,
+            providerId: prov.id,
+            providerCurrency: (prov as any).currency || 'PHP'
+          })
+        })
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Import failed')
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: 'Import failed' }))
+          throw new Error(err.error || `Chunk ${i + 1} failed`)
+        }
+
+        const result = await response.json()
+        totalImported += result.imported || 0
+        totalUpdated += result.updated || 0
       }
 
       setImportStatus({
         type: 'success',
-        message: result.message || `Import complete! ${result.imported} new, ${result.updated} updated.`
+        message: `Import complete! ${totalImported} new, ${totalUpdated} updated`
       })
 
     } catch (error: any) {

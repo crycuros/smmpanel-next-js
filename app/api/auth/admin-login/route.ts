@@ -77,8 +77,21 @@ export async function POST(request: NextRequest) {
       }, { status: 401 })
     }
 
-    // If no totpCode provided, ask for 2FA
-    if (!totpCode) {
+    // Check if user has 2FA enabled (totp_secret field exists)
+    const has2FA = user.totp_secret && user.totp_secret.length > 0
+
+    if (has2FA && totpCode) {
+      // Verify 2FA code if they have it enabled
+      if (!/^\d{6}$/.test(totpCode)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid 2FA code.'
+        }, { status: 401 })
+      }
+    }
+
+    // If user has 2FA enabled but no code provided, ask for it
+    if (has2FA && !totpCode) {
       return NextResponse.json({
         success: true,
         requires2FA: true,
@@ -86,18 +99,10 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Verify 2FA code - accept any 6-digit code
-    if (!/^\d{6}$/.test(totpCode)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid 2FA code. Please enter 6-digit code from Google Authenticator.'
-      }, { status: 401 })
-    }
-
-    // Generate session token
+    // No 2FA set up — skip, log in directly
     const sessionToken = Math.random().toString(36).substring(2) + Date.now().toString(36)
 
-    // Set session cookie (same as signin route)
+    // Set session cookie
     const userData = {
       client_id: user.client_id,
       id: user.client_id,

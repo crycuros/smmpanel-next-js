@@ -24,14 +24,15 @@ export async function POST(request: NextRequest) {
     // 1. Fetch live exchange rates
     const rates = await getExchangeRates()
 
-    // 2. Determine provider currency
+    // 2. Determine provider currency and markup
     const { data: providerInfo } = await supabase
       .from('service_api')
-      .select('currency')
+      .select('currency, api_profit')
       .eq('api_name', providerId)
       .single()
     
     const providerCurrency = providerInfo?.currency || (providerId === 'smmworld' ? 'USD' : 'PHP')
+    const profitPercent = parseFloat(providerInfo?.api_profit) || 0
 
     // Try different URL formats
     const urlsToTry = [
@@ -126,14 +127,15 @@ export async function POST(request: NextRequest) {
       const apiId = parseInt(s.service)
       apiServiceIds.add(apiId)
       
-      // Convert provider rate to PHP (Base Currency)
+      // Convert provider rate to PHP (Base Currency) + apply markup
       const providerRate = parseFloat(s.rate) || 0
       const rateInPHP = convertCurrency(providerRate, providerCurrency, SITE_BASE_CURRENCY, rates)
+      const markedUpRate = profitPercent > 0 ? rateInPHP * (1 + profitPercent / 100) : rateInPHP
 
       return {
         service_id: apiId,
         service_name: s.name,
-        service_price: rateInPHP.toFixed(4), // Store in PHP
+        service_price: markedUpRate.toFixed(4), // Store in PHP with markup
         service_min: parseInt(s.min) || 1,
         service_max: parseInt(s.max) || 100000,
         service_api: providerId,

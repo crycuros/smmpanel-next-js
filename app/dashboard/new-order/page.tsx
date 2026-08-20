@@ -24,7 +24,8 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
-  Link as LinkIcon
+  Link as LinkIcon,
+  MessageSquare
 } from "lucide-react"
 import {
   FaFacebook,
@@ -55,9 +56,10 @@ interface Service {
   service_price: string
   min_order: number
   max_order: number
+  service_type: string
   service_line: number
   api_detail: any
-  service_refill?: string
+  service_refill?: number
   average_time?: number | null
 }
 
@@ -805,107 +807,129 @@ export default function NewOrder() {
             <h2 className="font-mono text-sm text-slate-500 uppercase tracking-wider mb-6">New Order</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
-                  <LinkIcon className="w-4 h-4 inline mr-1" />
-                  Link
-                </label>
-                <input
-                  type="url"
-                  placeholder="Paste your social media link here..."
-                  value={link}
-                  onChange={(e) => handleLinkChange(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-                />
-                
-                {/* URL Preview Card */}
-                {isExpanding && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-3 p-4 rounded-xl border bg-blue-50 border-blue-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                      <div>
-                        <p className="text-sm font-mono text-blue-700">Expanding share link...</p>
-                        <p className="text-xs font-mono text-blue-500">Converting to original post URL</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {parsedUrl && !isExpanding && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className={`mt-3 p-4 rounded-xl border ${
-                      parsedUrl.isValid
-                        ? 'bg-green-50 border-green-200'
-                        : parsedUrl.needsExpansion
-                          ? 'bg-amber-50 border-amber-200'
-                          : 'bg-red-50 border-red-200'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {parsedUrl.isValid ? (
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      ) : parsedUrl.needsExpansion ? (
-                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold text-white ${
-                            getPlatformInfo(parsedUrl.platform).color
-                          }`}>
-                            {getPlatformInfo(parsedUrl.platform).name}
-                          </span>
+                {selectedService.service_type?.toLowerCase().includes('custom comment') || selectedService.service_type?.toLowerCase().includes('mentions custom list') ? (
+                  <>
+                    <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
+                      <MessageSquare className="w-4 h-4 inline mr-1" />
+                      {selectedService.service_type?.toLowerCase().includes('mention') ? 'Custom List' : 'Comments'} <span className="text-slate-400">(one per line)</span>
+                    </label>
+                    <textarea
+                      placeholder={selectedService.service_type?.toLowerCase().includes('mention')
+                        ? "Enter usernames/hashtags here, one per line...\n\nExample:\n@user1\n@user2\n#hashtag1"
+                        : "Enter your comments here, one per line...\n\nExample:\nGreat post!\nLove this content!\nKeep it up!"}
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      required
+                      rows={5}
+                      className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"
+                    />
+                    <p className="text-[10px] font-mono text-slate-400 mt-1">Each line = one item. Total items = quantity.</p>
+                  </>
+                ) : (
+                  <>
+                    <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
+                      <LinkIcon className="w-4 h-4 inline mr-1" />
+                      Link
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Paste your social media link here..."
+                      value={link}
+                      onChange={(e) => handleLinkChange(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                    />
+                    
+                    {/* URL Preview Card */}
+                    {isExpanding && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="mt-3 p-4 rounded-xl border bg-blue-50 border-blue-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                          <div>
+                            <p className="text-sm font-mono text-blue-700">Expanding share link...</p>
+                            <p className="text-xs font-mono text-blue-500">Converting to original post URL</p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    {parsedUrl && !isExpanding && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className={`mt-3 p-4 rounded-xl border ${
+                          parsedUrl.isValid
+                            ? 'bg-green-50 border-green-200'
+                            : parsedUrl.needsExpansion
+                              ? 'bg-amber-50 border-amber-200'
+                              : 'bg-red-50 border-red-200'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
                           {parsedUrl.isValid ? (
-                            <span className="text-xs font-mono text-green-700">Valid URL</span>
+                            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                           ) : parsedUrl.needsExpansion ? (
-                            <span className="text-xs font-mono text-amber-700">Share link - use original link</span>
+                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                           ) : (
-                            <span className="text-xs font-mono text-red-700">{parsedUrl.error}</span>
+                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                           )}
-                          {expandedUrl && (
-                            <span className="text-xs font-mono text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Auto-expanded ✓</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold text-white ${
+                                getPlatformInfo(parsedUrl.platform).color
+                              }`}>
+                                {getPlatformInfo(parsedUrl.platform).name}
+                              </span>
+                              {parsedUrl.isValid ? (
+                                <span className="text-xs font-mono text-green-700">Valid URL</span>
+                              ) : parsedUrl.needsExpansion ? (
+                                <span className="text-xs font-mono text-amber-700">Share link - use original link</span>
+                              ) : (
+                                <span className="text-xs font-mono text-red-700">{parsedUrl.error}</span>
+                              )}
+                              {expandedUrl && (
+                                <span className="text-xs font-mono text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Auto-expanded ✓</span>
+                              )}
+                            </div>
+                            {parsedUrl.username && (
+                              <p className="text-xs font-mono text-slate-600 truncate">
+                                @{parsedUrl.username}
+                              </p>
+                            )}
+                            {parsedUrl.postId && (
+                              <p className="text-xs font-mono text-slate-500 truncate">
+                                Post ID: {parsedUrl.postId}
+                              </p>
+                            )}
+                            {parsedUrl.needsExpansion && (
+                              <div className="text-[10px] font-mono text-amber-700 mt-2">
+                                <p>⚠️ Share link detected - attempting auto-expand...</p>
+                              </div>
+                            )}
+                            {!parsedUrl.needsExpansion && (
+                              <p className="text-[10px] font-mono text-slate-400 mt-2">
+                                Examples: {getPlatformInfo(parsedUrl.platform).examples}
+                              </p>
+                            )}
+                          </div>
+                          {parsedUrl.isValid && (
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-rose-500 hover:text-rose-600"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
                           )}
                         </div>
-                        {parsedUrl.username && (
-                          <p className="text-xs font-mono text-slate-600 truncate">
-                            @{parsedUrl.username}
-                          </p>
-                        )}
-                        {parsedUrl.postId && (
-                          <p className="text-xs font-mono text-slate-500 truncate">
-                            Post ID: {parsedUrl.postId}
-                          </p>
-                        )}
-                        {parsedUrl.needsExpansion && (
-                          <div className="text-[10px] font-mono text-amber-700 mt-2">
-                            <p>⚠️ Share link detected - attempting auto-expand...</p>
-                          </div>
-                        )}
-                        {!parsedUrl.needsExpansion && (
-                          <p className="text-[10px] font-mono text-slate-400 mt-2">
-                            Examples: {getPlatformInfo(parsedUrl.platform).examples}
-                          </p>
-                        )}
-                      </div>
-                      {parsedUrl.isValid && (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-rose-500 hover:text-rose-600"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      )}
-                    </div>
-                  </motion.div>
+                      </motion.div>
+                    )}
+                  </>
                 )}
               </div>
               <div>

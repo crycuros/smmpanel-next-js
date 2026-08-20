@@ -13,6 +13,80 @@ export async function middleware(request: NextRequest) {
 
   const session = request.cookies.get('session')
 
+  // Skip maintenance check for admin routes and auth routes
+  const isMaintenanceExempt = pathname.startsWith('/admin') || pathname.startsWith('/api/') || pathname === '/signin' || pathname === '/signup' || pathname === '/maintenance'
+  
+  if (!isMaintenanceExempt) {
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                request.cookies.set(name, value)
+              )
+            },
+          },
+        }
+      )
+
+      const { data: settings } = await supabase
+        .from('site_settings')
+        .select('maintenance_mode')
+        .limit(1)
+        .single()
+
+      if (settings?.maintenance_mode) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/maintenance'
+        return NextResponse.redirect(url)
+      }
+    } catch (e) {
+      console.error('Middleware maintenance check error:', e)
+    }
+  }
+
+  // Allow users on /maintenance to go back to home if maintenance is turned off
+  if (pathname === '/maintenance') {
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                request.cookies.set(name, value)
+              )
+            },
+          },
+        }
+      )
+
+      const { data: settings } = await supabase
+        .from('site_settings')
+        .select('maintenance_mode')
+        .limit(1)
+        .single()
+
+      if (!settings?.maintenance_mode) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+      }
+    } catch (e) {
+      console.error('Middleware maintenance check error:', e)
+    }
+  }
+
   // Protected routes (Dashboard & Admin)
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
     if (!session) {

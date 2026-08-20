@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
         min_order: parseInt(svc.min) || 1,
         max_order: parseInt(svc.max) || 100000,
         service_desc: `Min: ${svc.min}, Max: ${svc.max}, Rate: ${svc.rate}`,
-        service_type: '2',
+        service_type: svc.type || 'Default',
+        service_refill: svc.refill ? 1 : 0,
+        service_cancel: svc.cancel ? 1 : 0,
+        service_dripfeed: svc.dripfeed ? 1 : 0,
         api_serviceid: apiServiceId,
         api_provider: providerId,
         api_id: 0,
@@ -96,6 +99,10 @@ export async function POST(request: NextRequest) {
           min_order: svcData.min_order,
           max_order: svcData.max_order,
           service_desc: svcData.service_desc,
+          service_type: svcData.service_type,
+          service_refill: svcData.service_refill,
+          service_cancel: svcData.service_cancel,
+          service_dripfeed: svcData.service_dripfeed,
           api_provider: providerId
         }});
       } else {

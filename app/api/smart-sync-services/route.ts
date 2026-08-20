@@ -79,7 +79,10 @@ export async function POST(request: NextRequest) {
         min_order: parseInt(s.min) || 1,
         max_order: parseInt(s.max) || 100000,
         service_desc: s.desc || s.name || '',
-        service_type: '2',
+        service_type: s.type || 'Default',
+        service_refill: s.refill ? 1 : 0,
+        service_cancel: s.cancel ? 1 : 0,
+        service_dripfeed: s.dripfeed ? 1 : 0,
         api_provider: providerId,
         category_name: s.category || 'Uncategorized',
       };

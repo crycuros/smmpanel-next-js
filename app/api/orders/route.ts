@@ -12,7 +12,7 @@ const DEFAULT_PROFIT_PERCENT = 20;
 // Order validation schema
 const orderSchema = z.object({
   service: z.union([z.string(), z.number()]),
-  link: z.string().url('Invalid URL'),
+  link: z.string().min(1, 'Link/Comments required'),
   quantity: z.number().positive(),
   runs: z.number().optional(),
   interval: z.number().optional(),

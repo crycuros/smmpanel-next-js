@@ -280,7 +280,7 @@ export default function AdminSettings() {
     }
   }
 
-  const allProviders = [...DEFAULT_PROVIDERS, ...customProviders]
+  const allProviders = [...providers, ...customProviders.filter(p => !providers.find(sp => sp.id === p.id))]
 
   const handleLogout = () => {
     localStorage.removeItem('admin')

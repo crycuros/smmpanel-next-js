@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getExchangeRates, convertCurrency } from '@/lib/currency-service';
+import { cookies } from 'next/headers';
 
 const SITE_BASE_CURRENCY = 'PHP';
 const BATCH_SIZE = 500;
 
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session');
+  if (!sessionCookie?.value) {
+    return null;
+  }
+  try {
+    const userData = JSON.parse(sessionCookie.value);
+    if (userData.role !== 'admin') return null;
+    return userData;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const admin = await requireAdmin();
+    if (!admin) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

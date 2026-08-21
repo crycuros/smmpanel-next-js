@@ -132,6 +132,7 @@ export default function NewOrder() {
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [link, setLink] = useState("")
   const [quantity, setQuantity] = useState("")
+  const [comments, setComments] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [parsedUrl, setParsedUrl] = useState<ParsedUrl | null>(null)
@@ -151,6 +152,15 @@ export default function NewOrder() {
   const [loadingStats, setLoadingStats] = useState(false)
   const router = useRouter()
   const { currency, config, convertPrice, formatPrice } = useCurrency()
+
+  const isCustomCommentsService = (service: Service | null) => {
+    if (!service) return false;
+    const type = service.service_type?.toLowerCase() || '';
+    const name = service.service_name?.toLowerCase() || '';
+    return type.includes('custom comment') || 
+           type.includes('mentions custom list') || 
+           name.includes('custom comment');
+  }
 
   // Handle link change with URL parsing
   const handleLinkChange = async (value: string) => {
@@ -359,14 +369,20 @@ export default function NewOrder() {
     
     setIsLoading(true)
     try {
+      const payload: any = {
+        service: selectedService.service_id,
+        link: link,
+        quantity: parseInt(quantity),
+      }
+      
+      if (isCustomCommentsService(selectedService) && comments.trim()) {
+        payload.comments = comments.trim()
+      }
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service: selectedService.service_id,
-          link: link,
-          quantity: parseInt(quantity),
-        }),
+        body: JSON.stringify(payload),
       })
 
       const data = await response.json()
@@ -801,131 +817,137 @@ export default function NewOrder() {
             <h2 className="font-mono text-sm text-slate-500 uppercase tracking-wider mb-6">New Order</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                {selectedService.service_type?.toLowerCase().includes('custom comment') || selectedService.service_type?.toLowerCase().includes('mentions custom list') ? (
-                  <>
-                    <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
-                      <MessageSquare className="w-4 h-4 inline mr-1" />
-                      {selectedService.service_type?.toLowerCase().includes('mention') ? 'Custom List' : 'Comments'} <span className="text-slate-400">(one per line)</span>
-                    </label>
-                    <textarea
-                      placeholder={selectedService.service_type?.toLowerCase().includes('mention')
-                        ? "Enter usernames/hashtags here, one per line...\n\nExample:\n@user1\n@user2\n#hashtag1"
-                        : "Enter your comments here, one per line...\n\nExample:\nGreat post!\nLove this content!\nKeep it up!"}
-                      value={link}
-                      onChange={(e) => setLink(e.target.value)}
-                      required
-                      rows={5}
-                      className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"
-                    />
-                    <p className="text-[10px] font-mono text-slate-400 mt-1">Each line = one item. Total items = quantity.</p>
-                  </>
-                ) : (
-                  <>
-                    <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
-                      <LinkIcon className="w-4 h-4 inline mr-1" />
-                      Link
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Paste your social media link here..."
-                      value={link}
-                      onChange={(e) => handleLinkChange(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-                    />
-                    
-                    {/* URL Preview Card */}
-                    {isExpanding && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-3 p-4 rounded-xl border bg-blue-50 border-blue-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                          <div>
-                            <p className="text-sm font-mono text-blue-700">Expanding share link...</p>
-                            <p className="text-xs font-mono text-blue-500">Converting to original post URL</p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                    
-                    {parsedUrl && !isExpanding && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className={`mt-3 p-4 rounded-xl border ${
-                          parsedUrl.isValid
-                            ? 'bg-green-50 border-green-200'
-                            : parsedUrl.needsExpansion
-                              ? 'bg-amber-50 border-amber-200'
-                              : 'bg-red-50 border-red-200'
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
+                <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
+                  <LinkIcon className="w-4 h-4 inline mr-1" />
+                  Link
+                </label>
+                <input
+                  type="text"
+                  placeholder="Paste your social media link here..."
+                  value={link}
+                  onChange={(e) => handleLinkChange(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                />
+                
+                {/* URL Preview Card */}
+                {isExpanding && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-3 p-4 rounded-xl border bg-blue-50 border-blue-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      <div>
+                        <p className="text-sm font-mono text-blue-700">Expanding share link...</p>
+                        <p className="text-xs font-mono text-blue-500">Converting to original post URL</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {parsedUrl && !isExpanding && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className={`mt-3 p-4 rounded-xl border ${
+                      parsedUrl.isValid
+                        ? 'bg-green-50 border-green-200'
+                        : parsedUrl.needsExpansion
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {parsedUrl.isValid ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      ) : parsedUrl.needsExpansion ? (
+                        <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold text-white ${
+                            getPlatformInfo(parsedUrl.platform).color
+                          }`}>
+                            {getPlatformInfo(parsedUrl.platform).name}
+                          </span>
                           {parsedUrl.isValid ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs font-mono text-green-700">Valid URL</span>
                           ) : parsedUrl.needsExpansion ? (
-                            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs font-mono text-amber-700">Share link - use original link</span>
                           ) : (
-                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-xs font-mono text-red-700">{parsedUrl.error}</span>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold text-white ${
-                                getPlatformInfo(parsedUrl.platform).color
-                              }`}>
-                                {getPlatformInfo(parsedUrl.platform).name}
-                              </span>
-                              {parsedUrl.isValid ? (
-                                <span className="text-xs font-mono text-green-700">Valid URL</span>
-                              ) : parsedUrl.needsExpansion ? (
-                                <span className="text-xs font-mono text-amber-700">Share link - use original link</span>
-                              ) : (
-                                <span className="text-xs font-mono text-red-700">{parsedUrl.error}</span>
-                              )}
-                              {expandedUrl && (
-                                <span className="text-xs font-mono text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Auto-expanded ✓</span>
-                              )}
-                            </div>
-                            {parsedUrl.username && (
-                              <p className="text-xs font-mono text-slate-600 truncate">
-                                @{parsedUrl.username}
-                              </p>
-                            )}
-                            {parsedUrl.postId && (
-                              <p className="text-xs font-mono text-slate-500 truncate">
-                                Post ID: {parsedUrl.postId}
-                              </p>
-                            )}
-                            {parsedUrl.needsExpansion && (
-                              <div className="text-[10px] font-mono text-amber-700 mt-2">
-                                <p>⚠️ Share link detected - attempting auto-expand...</p>
-                              </div>
-                            )}
-                            {!parsedUrl.needsExpansion && (
-                              <p className="text-[10px] font-mono text-slate-400 mt-2">
-                                Examples: {getPlatformInfo(parsedUrl.platform).examples}
-                              </p>
-                            )}
-                          </div>
-                          {parsedUrl.isValid && (
-                            <a
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-rose-500 hover:text-rose-600"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
+                          {expandedUrl && (
+                            <span className="text-xs font-mono text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">Auto-expanded ✓</span>
                           )}
                         </div>
-                      </motion.div>
-                    )}
-                  </>
+                        {parsedUrl.username && (
+                          <p className="text-xs font-mono text-slate-600 truncate">
+                            @{parsedUrl.username}
+                          </p>
+                        )}
+                        {parsedUrl.postId && (
+                          <p className="text-xs font-mono text-slate-500 truncate">
+                            Post ID: {parsedUrl.postId}
+                          </p>
+                        )}
+                        {parsedUrl.needsExpansion && (
+                          <div className="text-[10px] font-mono text-amber-700 mt-2">
+                            <p>⚠️ Share link detected - attempting auto-expand...</p>
+                          </div>
+                        )}
+                        {!parsedUrl.needsExpansion && (
+                          <p className="text-[10px] font-mono text-slate-400 mt-2">
+                            Examples: {getPlatformInfo(parsedUrl.platform).examples}
+                          </p>
+                        )}
+                      </div>
+                      {parsedUrl.isValid && (
+                        <a
+                          href={link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-rose-500 hover:text-rose-600"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
                 )}
               </div>
+              
+              {isCustomCommentsService(selectedService) && (
+                <div>
+                  <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
+                    <MessageSquare className="w-4 h-4 inline mr-1" />
+                    {selectedService.service_type?.toLowerCase().includes('mention') ? 'Custom List' : 'Comments'} <span className="text-slate-400">(one per line)</span>
+                  </label>
+                  <textarea
+                    placeholder={selectedService.service_type?.toLowerCase().includes('mention')
+                      ? "Enter usernames/hashtags here, one per line...\n\nExample:\n@user1\n@user2\n#hashtag1"
+                      : "Enter your comments here, one per line...\n\nExample:\nGreat post!\nLove this content!\nKeep it up!"}
+                    value={comments}
+                    onChange={(e) => {
+                      setComments(e.target.value)
+                      // Auto-update quantity based on lines
+                      const lines = e.target.value.split('\n').filter(line => line.trim() !== '')
+                      if (lines.length > 0) {
+                        setQuantity(lines.length.toString())
+                      }
+                    }}
+                    required
+                    rows={5}
+                    className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"
+                  />
+                  <p className="text-[10px] font-mono text-slate-400 mt-1">Each line = one item. Quantity will auto-update based on lines.</p>
+                </div>
+              )}
+              
               <div>
                 <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
                   Quantity <span className="text-slate-400">Min: {selectedService.min_order} - Max: {selectedService.max_order}</span>
@@ -938,7 +960,8 @@ export default function NewOrder() {
                   min={selectedService.min_order}
                   max={selectedService.max_order}
                   required
-                  className="w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                  readOnly={isCustomCommentsService(selectedService)}
+                  className={`w-full px-4 py-3 bg-slate-50 border border-rose-100 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 ${isCustomCommentsService(selectedService) ? 'opacity-75 cursor-not-allowed' : ''}`}
                 />
               </div>
               <div className="bg-rose-50 rounded-xl p-4 flex justify-between items-center">

@@ -88,10 +88,31 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protected routes (Dashboard & Admin)
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/dashboard')) {
     if (!session) {
       const url = request.nextUrl.clone()
       url.pathname = '/signin'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // Admin sub-routes require admin role (but /admin itself is the login page)
+  if (pathname.startsWith('/admin/') && pathname !== '/admin') {
+    if (!session) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
+    try {
+      const sessionData = JSON.parse(session.value)
+      if (sessionData.role !== 'admin') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
       return NextResponse.redirect(url)
     }
   }

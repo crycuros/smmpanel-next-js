@@ -14,6 +14,7 @@ const orderSchema = z.object({
   service: z.union([z.string(), z.number()]),
   link: z.string().min(1, 'Link/Comments required'),
   quantity: z.number().positive(),
+  comments: z.string().optional(),
   runs: z.number().optional(),
   interval: z.number().optional(),
 });
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { service: providerServiceId, link, quantity, runs, interval } = validation.data;
+    const { service: providerServiceId, link, quantity, comments, runs, interval } = validation.data;
     const supabase = await getServerSupabase();
 
     // 3. Get user, service, and exchange rates
@@ -111,7 +112,8 @@ export async function POST(request: NextRequest) {
         quantity, 
         runs, 
         interval,
-        providerId
+        providerId,
+        comments
       );
     }
 
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
       client_id: dbUser.client_id,
       service_id: serviceData.service_id,
       api_orderid: providerOrderResult.order || 0,
-      order_detail: link,
+      order_detail: comments ? `${link}\n\nComments:\n${comments}` : link,
       order_url: link,
       order_quantity: quantity,
       order_charge: customerPricePHP, 
@@ -170,7 +172,8 @@ async function submitOrderToProvider(
   quantity: number,
   runs?: number,
   interval?: number,
-  providerId: string = 'weboostph'
+  providerId: string = 'weboostph',
+  comments?: string
 ) {
   try {
     const providerConfig = getProviderConfig(providerId);
@@ -185,12 +188,14 @@ async function submitOrderToProvider(
 
     if (runs) formData.append('runs', runs.toString());
     if (interval) formData.append('interval', interval.toString());
+    if (comments) formData.append('comments', comments);
 
     const response = await fetch(providerConfig.url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
     });
+    return await response.json();
   } catch (error) {
     console.error('Provider API Error:', error);
     return { error: 'Failed to submit order to provider' };

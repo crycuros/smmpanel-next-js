@@ -188,7 +188,10 @@ async function submitOrderToProvider(
 
     if (runs) formData.append('runs', runs.toString());
     if (interval) formData.append('interval', interval.toString());
-    if (comments) formData.append('comments', comments);
+    if (comments) {
+      formData.append('comments', comments);
+      formData.append('usernames', comments); // Send as usernames too for Mentions Custom List
+    }
 
     const response = await fetch(providerConfig.url, {
       method: 'POST',

@@ -164,7 +164,8 @@ export default function NewOrder() {
            name.includes('custom comment') ||
            (name.includes('custom') && name.includes('comment')) ||
            name.includes('mentions custom list') ||
-           (name.includes('custom') && name.includes('list'));
+           (name.includes('custom') && name.includes('list')) ||
+           type === '2' || type === '10';
   }
 
   // Handle link change with URL parsing

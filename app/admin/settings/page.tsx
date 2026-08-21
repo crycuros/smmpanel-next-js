@@ -329,7 +329,7 @@ export default function AdminSettings() {
     
     // Auto-save to localStorage
     const allUpdatedProviders = [
-      { id: "weboostph", name: "WeBoostPH", url: "https://weboostph.biz/api/v2", key: providers.find(p => p.id === "weboostph")?.key || "" },
+      { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: providers.find(p => p.id === "smmgen")?.key || "" },
       { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" },
       ...updatedCustomProviders
     ].filter((p: Provider, index: number, self: Provider[]) => self.findIndex((x: Provider) => x.id === p.id) === index)
@@ -345,7 +345,7 @@ export default function AdminSettings() {
     
     // Auto-save to localStorage
     const allUpdatedProviders = [
-      { id: "weboostph", name: "WeBoostPH", url: "https://weboostph.biz/api/v2", key: providers.find(p => p.id === "weboostph")?.key || "" },
+      { id: "smmgen", name: "SMMGen", url: "https://my.smmgen.com/api/v2", key: providers.find(p => p.id === "smmgen")?.key || "" },
       { id: "generic", name: "Generic API", url: "https://example.com/api", key: "" },
       ...updatedCustomProviders
     ].filter((p: Provider, index: number, self: Provider[]) => self.findIndex((x: Provider) => x.id === p.id) === index)

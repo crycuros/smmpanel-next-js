@@ -21,7 +21,7 @@ async function resolveOrderProvider(apiOrderId: number, provider?: string): Prom
     .eq('api_orderid', apiOrderId)
     .single();
 
-  const providerId = (order as any)?.services?.api_provider || 'weboostph';
+  const providerId = (order as any)?.services?.api_provider || 'smmgen';
   const config = getProviderConfig(providerId);
   return config.key ? config : null;
 }

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const provider = searchParams.get('provider') || 'weboostph';
+  const provider = searchParams.get('provider') || 'smmgen';
   const action = searchParams.get('action');
   const apiKey = searchParams.get('apiKey');
 

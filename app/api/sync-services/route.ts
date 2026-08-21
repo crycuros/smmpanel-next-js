@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          provider: 'weboostph',
+          provider: 'smmgen',
           apiKey: apiKey,
           action: 'services'
         })
@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
         apiUrl.replace('/v2', ''),
         apiUrl + '/',
         apiUrl.replace('/api/v2', '/api'),
-        'https://weboostph.com/api/v2',
-        'https://api.weboostph.com/v2'
+        'https://my.smmgen.com/api/v2',
+        'https://api.smmgen.com/v2'
       ]
 
       const requestConfigs = [

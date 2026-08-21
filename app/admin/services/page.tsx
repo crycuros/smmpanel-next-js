@@ -314,12 +314,27 @@ export default function AdminServices() {
   // Auto-sync services from provider API
   const handleSyncServices = async () => {
     // Get API key from localStorage (stored by admin settings)
-    const weboostKey = localStorage.getItem('weboostph_api_key')
-    const smmworldKey = localStorage.getItem('smmworld_api_key')
+    const savedProvider = localStorage.getItem('selectedProvider') || 'smmgen'
     
-    // Check which provider is selected
-    const savedProvider = localStorage.getItem('selectedProvider') || 'weboostph'
-    const apiKey = savedProvider === 'smmworld' ? smmworldKey : weboostKey
+    // First try to get from custom providers array
+    let apiKey = ''
+    try {
+      const providersStr = localStorage.getItem('smmProviders')
+      if (providersStr) {
+        const providersList = JSON.parse(providersStr)
+        const activeProv = providersList.find((p: any) => p.id === savedProvider)
+        if (activeProv) apiKey = activeProv.key
+      }
+    } catch (e) {
+      console.error('Error parsing providers:', e)
+    }
+    
+    // Fallback to specific localStorage keys if array doesn't have it
+    if (!apiKey) {
+      if (savedProvider === 'smmworld') apiKey = localStorage.getItem('smmworld_api_key') || ''
+      else if (savedProvider === 'smmgen') apiKey = localStorage.getItem('smmgen_api_key') || ''
+      else apiKey = localStorage.getItem(`${savedProvider}_api_key`) || ''
+    }
     
     if (!apiKey) {
       alert('Please configure your API key in Admin → Settings first!')

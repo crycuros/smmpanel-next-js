@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // SMM API Configuration
-const SMM_API_URL = 'https://weboostph.biz/api/v2';
-const SMM_API_KEY = process.env.NEXT_PUBLIC_SMM_API_KEY || 'ba0bdd77f025b1fc19b321ecaf0acf67';
+const SMM_API_URL = 'https://my.smmgen.com/api/v2';
+const SMM_API_KEY = process.env.SMMGEN_API_KEY || 'ba0bdd77f025b1fc19b321ecaf0acf67';
 
 export async function POST(request: NextRequest) {
   try {

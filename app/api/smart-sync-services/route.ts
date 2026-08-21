@@ -88,13 +88,13 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // 5. Get all existing services for this provider
+    // 5. Get all existing services for this provider (match by api_serviceid)
     const { data: dbServices } = await supabase
       .from('services')
-      .select('service_id')
+      .select('api_serviceid')
       .eq('api_provider', providerId);
 
-    const dbServiceIds = new Set(dbServices?.map(s => s.service_id) || []);
+    const dbServiceIds = new Set(dbServices?.map(s => s.api_serviceid) || []);
 
     // 6. Delete services removed from provider
     const idsToDelete = Array.from(dbServiceIds).filter(id => !apiServiceIds.has(id));
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from('services')
           .delete()
-          .in('service_id', idsToDelete.slice(i, i + BATCH_SIZE))
+          .in('api_serviceid', idsToDelete.slice(i, i + BATCH_SIZE))
           .eq('api_provider', providerId);
       }
     }
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 8. Batch upsert: separate into updates and inserts
-    const updates: { id: number; data: any }[] = [];
+    const updates: { api_serviceid: number; data: any }[] = [];
     const inserts: any[] = [];
 
     for (const svc of transformedServices) {
@@ -152,11 +152,10 @@ export async function POST(request: NextRequest) {
       };
 
       if (dbServiceIds.has(svc.service_id)) {
-        updates.push({ id: svc.service_id, data: base });
+        updates.push({ api_serviceid: svc.service_id, data: base });
       } else {
         inserts.push({
           ...base,
-          service_id: svc.service_id,
           api_serviceid: svc.service_id,
           api_id: 0,
           service_profit: profitPercent.toString(),
@@ -178,7 +177,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < updates.length; i += BATCH_SIZE) {
       const batch = updates.slice(i, i + BATCH_SIZE);
       const promises = batch.map(u =>
-        supabase.from('services').update(u.data).eq('service_id', u.id)
+        supabase.from('services').update(u.data).eq('api_serviceid', u.api_serviceid).eq('api_provider', providerId)
       );
       const results = await Promise.allSettled(promises);
       updatedCount += results.filter(r => r.status === 'fulfilled').length;

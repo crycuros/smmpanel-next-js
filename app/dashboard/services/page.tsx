@@ -38,7 +38,7 @@ interface Service {
   service_desc: string
   time: string
   average_time: number
-  service_refill?: string
+  service_refill?: number
 }
 
 const categoryIcons: Record<string, any> = {
@@ -487,13 +487,9 @@ export default function Services() {
                               <div className="flex-1">
                                 <span className="font-mono text-sm text-slate-700 line-clamp-2">{service.service_name}</span>
                                 {/* Refill Indicator */}
-                                {service.service_refill === 'no' ? (
+                                {service.service_refill === 0 ? (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-500">
                                     No Refill
-                                  </span>
-                                ) : service.service_refill === 'non-drop' ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-green-100 text-green-700">
-                                    Non-Drop
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-100 text-blue-700">

@@ -561,13 +561,9 @@ export default function NewOrder() {
             >
               <div className="flex items-center justify-between mb-2">
                 <p className="font-mono text-sm font-semibold">{service.service_name}</p>
-                {service.service_refill === 'no' ? (
+                {service.service_refill === 0 ? (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-500">
                     No Refill
-                  </span>
-                ) : service.service_refill === 'non-drop' ? (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-green-100 text-green-700">
-                     Non-Drop
                   </span>
                 ) : (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-100 text-blue-700">
@@ -601,10 +597,8 @@ export default function NewOrder() {
               <div className="mb-4">
                 <h4 className="font-sans text-xl font-semibold text-slate-900 mb-2">{selectedService.service_name}</h4>
                 <div className="flex items-center gap-2">
-                  {selectedService.service_refill === 'no' ? (
+                  {selectedService.service_refill === 0 ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-100 text-slate-500">No Refill</span>
-                  ) : selectedService.service_refill === 'non-drop' ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-green-100 text-green-700">Non-Drop</span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-blue-100 text-blue-700">↺ Refill Available</span>
                   )}

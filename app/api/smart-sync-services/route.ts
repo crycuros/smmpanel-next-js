@@ -143,6 +143,10 @@ export async function POST(request: NextRequest) {
         min_order: svc.min_order,
         max_order: svc.max_order,
         service_desc: svc.service_desc,
+        service_type: svc.service_type,
+        service_refill: svc.service_refill,
+        service_cancel: svc.service_cancel,
+        service_dripfeed: svc.service_dripfeed,
         api_provider: providerId,
         category_id: catId,
       };
@@ -153,7 +157,6 @@ export async function POST(request: NextRequest) {
         inserts.push({
           ...base,
           service_id: svc.service_id,
-          service_type: '2',
           api_serviceid: svc.service_id,
           api_id: 0,
           service_profit: profitPercent.toString(),

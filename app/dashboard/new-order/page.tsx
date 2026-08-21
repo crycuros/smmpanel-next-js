@@ -157,10 +157,14 @@ export default function NewOrder() {
     if (!service) return false;
     const type = service.service_type?.toLowerCase() || '';
     const name = service.service_name?.toLowerCase() || '';
+    
+    // Check if it's a custom comments or mentions custom list service
     return type.includes('custom comment') || 
            type.includes('mentions custom list') || 
            name.includes('custom comment') ||
-           (name.includes('custom') && name.includes('comment'));
+           (name.includes('custom') && name.includes('comment')) ||
+           name.includes('mentions custom list') ||
+           (name.includes('custom') && name.includes('list'));
   }
 
   // Handle link change with URL parsing
@@ -926,10 +930,10 @@ export default function NewOrder() {
                 <div>
                   <label className="font-mono text-xs text-slate-500 uppercase block mb-2">
                     <MessageSquare className="w-4 h-4 inline mr-1" />
-                    {selectedService.service_type?.toLowerCase().includes('mention') ? 'Custom List' : 'Comments'} <span className="text-slate-400">(one per line)</span>
+                    {selectedService.service_type?.toLowerCase().includes('mention') || selectedService.service_name?.toLowerCase().includes('mention') || selectedService.service_name?.toLowerCase().includes('list') ? 'Custom List' : 'Comments'} <span className="text-slate-400">(one per line)</span>
                   </label>
                   <textarea
-                    placeholder={selectedService.service_type?.toLowerCase().includes('mention')
+                    placeholder={selectedService.service_type?.toLowerCase().includes('mention') || selectedService.service_name?.toLowerCase().includes('mention') || selectedService.service_name?.toLowerCase().includes('list')
                       ? "Enter usernames/hashtags here, one per line...\n\nExample:\n@user1\n@user2\n#hashtag1"
                       : "Enter your comments here, one per line...\n\nExample:\nGreat post!\nLove this content!\nKeep it up!"}
                     value={comments}

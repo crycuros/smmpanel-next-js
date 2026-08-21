@@ -16,7 +16,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
 };
 
 export function getProviderConfig(providerId: string): ProviderConfig {
-  return PROVIDER_CONFIGS[providerId] || PROVIDER_CONFIGS['weboostph'];
+  return PROVIDER_CONFIGS[providerId] || PROVIDER_CONFIGS['smmgen'];
 }
 
 export function getProviderCurrency(providerId: string): string {

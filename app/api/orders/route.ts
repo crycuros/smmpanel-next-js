@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Identify provider and its currency
-    const providerId = serviceData?.api_provider || 'weboostph';
+    const providerId = serviceData?.api_provider || 'smmgen';
     const isCustomService = providerId === 'custom' || serviceData?.api_serviceid === 0;
     const providerCurrency = isCustomService ? 'PHP' : getProviderCurrency(providerId);
 
@@ -172,7 +172,7 @@ async function submitOrderToProvider(
   quantity: number,
   runs?: number,
   interval?: number,
-  providerId: string = 'weboostph',
+  providerId: string = 'smmgen',
   comments?: string
 ) {
   try {
@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     if (action === 'balance') {
-      const providerId = searchParams.get('provider') || 'weboostph';
+      const providerId = searchParams.get('provider') || 'smmgen';
       const providerConfig = getProviderConfig(providerId);
       if (!providerConfig.key) {
         return NextResponse.json({ error: 'Provider API key not configured' }, { status: 500 });

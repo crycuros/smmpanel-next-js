@@ -20,7 +20,7 @@ async function resolveOrderProvider(apiOrderId: number, provider?: string) {
     .eq('api_orderid', apiOrderId)
     .single();
 
-  const providerId = (order as any)?.services?.api_provider || 'weboostph';
+  const providerId = (order as any)?.services?.api_provider || 'smmgen';
   const config = getProviderConfig(providerId);
   return config.key ? config : null;
 }
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
 
   try {
     if (refillIds) {
-      const config = getProviderConfig(provider || 'weboostph');
+      const config = getProviderConfig(provider || 'smmgen');
       if (!config.key) {
         return NextResponse.json({ error: 'Provider not configured' }, { status: 500 });
       }
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (refillId) {
-      const config = getProviderConfig(provider || 'weboostph');
+      const config = getProviderConfig(provider || 'smmgen');
       if (!config.key) {
         return NextResponse.json({ error: 'Provider not configured' }, { status: 500 });
       }

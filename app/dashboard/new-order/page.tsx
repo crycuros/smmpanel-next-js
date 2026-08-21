@@ -159,7 +159,8 @@ export default function NewOrder() {
     const name = service.service_name?.toLowerCase() || '';
     return type.includes('custom comment') || 
            type.includes('mentions custom list') || 
-           name.includes('custom comment');
+           name.includes('custom comment') ||
+           (name.includes('custom') && name.includes('comment'));
   }
 
   // Handle link change with URL parsing
